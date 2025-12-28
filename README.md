@@ -2,18 +2,18 @@
 
 Production-minded Laravel 12 application for **D1/W1 Forex market analysis**.
 
-The system ingests **daily/weekly candlestick data** from Finnhub, stores it with **idempotent imports**, exposes a clean **JSON API**, and renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** (Blade + vanilla JS). It also produces a **daily signal** (BUY/SELL/WAIT) with a structured explanation and sends a notification email.
+The system ingests **daily/weekly candlestick data** from Alpha Vantage, stores it with **idempotent imports**, exposes a clean **JSON API**, and renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** (Blade + vanilla JS). It also produces a **daily signal** (BUY/SELL/WAIT) with a structured explanation and sends a notification email.
 
 This repository is intentionally scoped to **higher timeframes only (D1/W1)** to keep decision-making consistent and low-noise.
 
 ## Highlights
-- Finnhub candles ingestion (D1/W1) with retries, backoff, and idempotency
+- Alpha Vantage candles ingestion (D1/W1) with retries, backoff, and idempotency
 - MySQL persistence with unique constraints to prevent duplicates
 - JSON API for candles and signal history
 - Blade UI + TradingView Lightweight Charts (vanilla JS)
 - Stochastic Oscillator + pragmatic Support/Resistance level detection
 - Scheduler-first automation (single cron entry in production)
-- Testable integration boundaries (HTTP fakes for Finnhub/OpenAI)
+- Testable integration boundaries (HTTP fakes for Alpha Vantage/OpenAI)
 
 ## Tech Stack
 - PHP 8.2+
@@ -54,6 +54,19 @@ Run migrations:
 docker compose exec -T laravel.test php artisan migrate
 ```
 
+Seed default symbols:
+
+```bash
+docker compose exec -T laravel.test php artisan db:seed
+```
+
+Sync candles:
+
+```bash
+docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=EURUSD
+docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=EURUSD
+```
+
 ### Tests
 ```bash
 docker compose exec -T laravel.test php artisan test
@@ -77,8 +90,11 @@ docker compose down
 Environment variables are stored in `.env` (not committed). Use `.env.example` as the template.
 
 Required integrations:
-- `FINNHUB_API_KEY`
+- `ALPHA_VANTAGE_API_KEY`
 - `OPENAI_API_KEY`
+
+API reference:
+- Alpha Vantage FX Daily/Weekly documentation: https://www.alphavantage.co/documentation/#fx-daily
 
 Mail:
 - Configure `MAIL_*` variables (local default is Mailpit).
@@ -91,7 +107,7 @@ Mail:
   - `Signal` — daily/weekly stored outputs with explanation and metadata
 
 - **Services**
-  - `FinnhubClient` — HTTP client wrapper with retries and typed responses
+  - `AlphaVantageClient` — HTTP client wrapper with retries and typed responses
   - `CandleSyncService` — overlap-window sync + upserts (idempotent)
   - Indicator services — Stochastic + Support/Resistance computation
   - `SignalGeneratorService` — prompt assembly, JSON schema validation, persistence
@@ -113,6 +129,11 @@ In production, configure a single cron entry to run Laravel Scheduler:
 
 ### Idempotency guarantees
 Candles are imported using a unique key (`symbol_id`, `timeframe`, `t`) and upsert strategy, allowing safe re-runs and overlap-window refreshes.
+
+### Rate-limit protection
+Alpha Vantage calls are protected by:
+- short-TTL response caching (`ALPHA_VANTAGE_CACHE_TTL_SECONDS`)
+- per-symbol/timeframe sync locks to prevent concurrent imports (`ALPHA_VANTAGE_LOCK_TTL_SECONDS`)
 
 ## Project Plan
 See `PLAN.md` for phased delivery milestones.

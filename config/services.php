@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'alphavantage' => [
+        'base_url' => env('ALPHA_VANTAGE_BASE_URL', 'https://www.alphavantage.co'),
+        'key' => env('ALPHA_VANTAGE_API_KEY'),
+        'cache_ttl_seconds' => env('ALPHA_VANTAGE_CACHE_TTL_SECONDS', 900),
+        'lock_ttl_seconds' => env('ALPHA_VANTAGE_LOCK_TTL_SECONDS', 300),
+    ],
+
 ];

@@ -3,7 +3,7 @@
 ## Scope
 Build a Laravel 12 (PHP 8.2+) app that:
 
-- Fetches **FREE** Forex candlestick data from **Finnhub** (Daily + Weekly only)
+- Fetches **FREE** Forex candlestick data from **Alpha Vantage** (Daily + Weekly only)
 - Stores candles in **MySQL** with **idempotent** imports
 - Exposes a **JSON API** for candles and AI signals
 - Renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** in **Blade** (vanilla JS)
@@ -27,7 +27,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 - **Siteground**-friendly deployment
 - **Scheduler** driven with **one cron** entry
 - API keys via env:
-  - `FINNHUB_API_KEY`
+  - `ALPHA_VANTAGE_API_KEY`
   - `OPENAI_API_KEY`
   - `MAIL_*`
 - Production-ready:
@@ -46,7 +46,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
   - `Candle` (OHLCV per symbol + timeframe)
   - `Signal` (daily AI output per symbol + timeframe + date)
 - **Integrations**
-  - `FinnhubClient` (HTTP)
+  - `AlphaVantageClient` (HTTP)
   - `OpenAiClient` (HTTP)
 - **Jobs/Commands** (Scheduler)
   - `forex:sync-candles` (idempotent, D1/W1)
@@ -58,13 +58,12 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 
 ---
 
-## Data Source Notes (Finnhub)
-- Use Finnhub **forex candles endpoint**.
-- Prefer Finnhub resolutions:
-  - `D` for Daily
-  - `W` for Weekly
-- Symbols typically look like `OANDA:EUR_USD`, `OANDA:USD_JPY`, etc.
-- Add a configuration layer to map human-friendly pairs (`EURUSD`) to Finnhub symbols.
+## Data Source Notes (Alpha Vantage)
+- Use Alpha Vantage FX time series endpoints:
+  - `FX_DAILY`
+  - `FX_WEEKLY`
+- Store symbols in `symbols.provider_symbol` as `FROM/TO` (e.g. `EUR/USD`, `USD/JPY`).
+- Use `outputsize=compact` for recent ranges, `outputsize=full` for backfills.
 
 ---
 
@@ -72,8 +71,8 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 ### `symbols`
 - `id`
 - `code` (e.g. `EURUSD`)
-- `provider` (e.g. `finnhub`)
-- `provider_symbol` (e.g. `OANDA:EUR_USD`)
+- `provider` (e.g. `alphavantage`)
+- `provider_symbol` (e.g. `EUR/USD`)
 - `is_active` (bool)
 - timestamps
 
@@ -225,8 +224,12 @@ If queues are enabled later:
 - **Retries**:
   - Laravel HTTP client `retry()` with backoff and jitter
 - **Rate limiting**:
-  - cache Finnhub responses for short periods where appropriate
-  - per-symbol throttling
+  - cache Alpha Vantage responses with a short TTL to reduce repeated external calls
+    - make TTL configurable (e.g. `ALPHA_VANTAGE_CACHE_TTL_SECONDS`)
+    - allow disabling cache for debugging by setting TTL to `0`
+  - use per-symbol/timeframe locks to prevent concurrent sync jobs from calling Alpha Vantage in parallel
+    - make lock TTL configurable (e.g. `ALPHA_VANTAGE_LOCK_TTL_SECONDS`)
+  - cache *your own* JSON API responses (candles/signal reads) with `Cache-Control` + server-side cache where appropriate
 - **Observability**:
   - structured logs for imports and AI generation
   - store last successful sync timestamps
@@ -245,7 +248,7 @@ If queues are enabled later:
   - chart page loads
 
 - **Integration tests (HTTP fakes)**
-  - Finnhub client: successful response, rate limit, timeouts
+  - Alpha Vantage client: successful response, rate limit, timeouts
   - OpenAI client: valid JSON, invalid JSON, retries
 
 - **Database tests**
@@ -273,7 +276,7 @@ If queues are enabled later:
   - Use `http://localhost` by default.
   - If you want `http://forex.test`, add `127.0.0.1 forex.test` to `/etc/hosts` and keep `APP_URL` consistent.
 - Configure `.env.example` with:
-  - `FINNHUB_API_KEY`, `OPENAI_API_KEY`
+  - `ALPHA_VANTAGE_API_KEY`, `OPENAI_API_KEY`
   - `DB_*`, `APP_URL`
   - `MAIL_*` (Mailpit defaults for local)
 - Hardening basics:
@@ -302,13 +305,26 @@ If queues are enabled later:
 
 ---
 
-## Phase 3 — Finnhub Integration + Candle Ingestion
-- Implement `FinnhubClient` using Laravel HTTP client
+## Phase 3 — Alpha Vantage Integration + Candle Ingestion (COMPLETED)
+- Implement `AlphaVantageClient` using Laravel HTTP client
+  - Add short-TTL response caching to reduce API calls and avoid rate limits (configurable)
+    - `ALPHA_VANTAGE_CACHE_TTL_SECONDS`
 - Implement `CandleSyncService`:
   - backfill support (e.g. “last 2 years D1”, “last 5 years W1”)
   - incremental sync (daily)
   - overlap window re-sync (correct revisions)
+  - Prevent concurrent syncs per symbol/timeframe using cache locks (configurable)
+    - `ALPHA_VANTAGE_LOCK_TTL_SECONDS`
 - Add artisan command: `forex:sync-candles`
+  - Requires `ALPHA_VANTAGE_API_KEY` and at least one active row in `symbols`
+  - Example: `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1`
+
+**Operational notes**
+- Reset local DB and seed default symbols:
+  - `docker compose exec -T laravel.test php artisan migrate:fresh --seed`
+- Sync example:
+  - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=EURUSD`
+  - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=EURUSD`
 
 **Acceptance criteria**
 - Running the command multiple times results in no duplicates
@@ -322,7 +338,11 @@ If queues are enabled later:
   - candles
   - latest signal
   - signal history
-- Add caching for read endpoints
+- Add caching for read endpoints:
+  - Server-side cache for common reads (candles ranges, latest signal)
+  - Add `Cache-Control` headers to allow browser/proxy caching where safe
+  - Consider `ETag`/conditional requests for large candle payloads
+  - Ensure caches are keyed by `symbol`, `timeframe`, and date range
 
 **Acceptance criteria**
 - API returns correct JSON for chart consumption
