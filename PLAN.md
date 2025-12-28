@@ -256,7 +256,7 @@ If queues are enabled later:
 
 # Phases
 
-## Phase 1 — Project Bootstrap
+## Phase 1 — Project Bootstrap (COMPLETED)
 - Local dev environment: **Ubuntu + Docker Desktop** using `docker compose`
 - Create Laravel 12 project configured for PHP 8.2+
 - Add `docker-compose.yml` (Sail-style) for local development:
@@ -290,7 +290,7 @@ If queues are enabled later:
 
 ---
 
-## Phase 2 — Database + Domain Models
+## Phase 2 — Database + Domain Models (COMPLETED)
 - Create migrations:
   - `symbols`, `candles`, `signals`
 - Add Eloquent models + relationships
