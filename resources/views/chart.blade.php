@@ -15,11 +15,18 @@
         label { font-size: 12px; color: #9ca3af; }
         select, input { background: #111827; border: 1px solid #243043; border-radius: 8px; padding: 10px 12px; color: #e5e7eb; min-width: 140px; }
         input[type="date"] { min-width: 160px; }
+        input[type="number"] { min-width: 110px; }
+        .toggle-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border: 1px solid #243043; border-radius: 8px; background: #111827; }
+        .toggle { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #e5e7eb; }
+        .toggle input { min-width: auto; width: 16px; height: 16px; padding: 0; }
         button { background: #2563eb; border: 1px solid #1d4ed8; border-radius: 8px; padding: 10px 14px; color: white; font-weight: 600; cursor: pointer; }
         button.secondary { background: transparent; border-color: #243043; color: #e5e7eb; }
         button:disabled { opacity: .6; cursor: not-allowed; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
         #chart { height: 560px; border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
+        #stochWrap { border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
+        #stochChart { height: 180px; }
+        .hidden { display: none; }
         .status { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #243043; border-radius: 12px; background: #0b1222; }
         .status-left { display: flex; gap: 10px; align-items: center; }
         .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid #243043; color: #9ca3af; }
@@ -53,6 +60,33 @@
                 <label for="to">To (optional)</label>
                 <input id="to" type="date" />
             </div>
+            <div class="field">
+                <label>Indicators (default off)</label>
+                <div class="toggle-row">
+                    <label class="toggle"><input id="showSr" type="checkbox" />SR</label>
+                    <label class="toggle"><input id="showStoch" type="checkbox" />Stoch</label>
+                </div>
+            </div>
+            <div class="field">
+                <label for="stochK">Stoch K</label>
+                <input id="stochK" type="number" min="2" max="100" step="1" />
+            </div>
+            <div class="field">
+                <label for="stochD">Stoch D</label>
+                <input id="stochD" type="number" min="1" max="50" step="1" />
+            </div>
+            <div class="field">
+                <label for="stochSmooth">Stoch Smooth</label>
+                <input id="stochSmooth" type="number" min="1" max="50" step="1" />
+            </div>
+            <div class="field">
+                <label for="srLookback">SR Lookback</label>
+                <input id="srLookback" type="number" min="50" max="2000" step="1" />
+            </div>
+            <div class="field">
+                <label for="srLevels">SR Levels</label>
+                <input id="srLevels" type="number" min="1" max="50" step="1" />
+            </div>
             <button id="load">Load</button>
             <button id="reset" class="secondary">Reset range</button>
         </div>
@@ -69,6 +103,9 @@
             </div>
         </div>
         <div id="chart"></div>
+        <div id="stochWrap" class="hidden">
+            <div id="stochChart"></div>
+        </div>
     </div>
 
     <div class="footer muted">
@@ -88,6 +125,16 @@
     const elStatusBadge = document.getElementById('statusBadge');
     const elStatusText = document.getElementById('statusText');
     const elLastClosed = document.getElementById('lastClosed');
+    const elShowSr = document.getElementById('showSr');
+    const elShowStoch = document.getElementById('showStoch');
+    const elStochK = document.getElementById('stochK');
+    const elStochD = document.getElementById('stochD');
+    const elStochSmooth = document.getElementById('stochSmooth');
+    const elSrLookback = document.getElementById('srLookback');
+    const elSrLevels = document.getElementById('srLevels');
+    const elStochWrap = document.getElementById('stochWrap');
+
+    let lastOkStatusText = 'Ready.';
 
     function setStatus(kind, text) {
         elStatusBadge.textContent = kind;
@@ -105,6 +152,7 @@
         }
         if (kind === 'ok') {
             elStatusBadge.style.color = '#86efac';
+            lastOkStatusText = text;
         }
     }
 
@@ -135,11 +183,41 @@
         return { from: fmtDate(from), to: fmtDate(to) };
     }
 
+    function indicatorDefaults(timeframe) {
+        if (timeframe === 'W1') {
+            return {
+                stochK: 14,
+                stochD: 3,
+                stochSmooth: 3,
+                srLookback: 260,
+                srLevels: 8,
+            };
+        }
+
+        return {
+            stochK: 14,
+            stochD: 3,
+            stochSmooth: 3,
+            srLookback: 300,
+            srLevels: 8,
+        };
+    }
+
     function applyDefaultRange() {
         const tf = elTimeframe.value;
         const r = defaultRange(tf);
         elFrom.value = r.from;
         elTo.value = r.to;
+    }
+
+    function applyIndicatorDefaults() {
+        const tf = elTimeframe.value;
+        const d = indicatorDefaults(tf);
+        elStochK.value = String(d.stochK);
+        elStochD.value = String(d.stochD);
+        elStochSmooth.value = String(d.stochSmooth);
+        elSrLookback.value = String(d.srLookback);
+        elSrLevels.value = String(d.srLevels);
     }
 
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
@@ -159,12 +237,36 @@
         wickDownColor: '#ef4444',
     });
 
+    const stochChart = LightweightCharts.createChart(document.getElementById('stochChart'), {
+        layout: { background: { color: '#0b1222' }, textColor: '#e5e7eb' },
+        grid: { vertLines: { color: '#111827' }, horzLines: { color: '#111827' } },
+        rightPriceScale: { borderColor: '#243043' },
+        timeScale: { borderColor: '#243043', timeVisible: false, secondsVisible: false },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    });
+
+    const stochKSeries = stochChart.addLineSeries({ color: '#60a5fa', lineWidth: 2 });
+    const stochDSeries = stochChart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
+    const stochMinSeries = stochChart.addLineSeries({ color: 'rgba(0,0,0,0)', lineWidth: 1 });
+    const stochMaxSeries = stochChart.addLineSeries({ color: 'rgba(0,0,0,0)', lineWidth: 1 });
+
+    stochKSeries.createPriceLine({ price: 20, color: '#243043', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed });
+    stochKSeries.createPriceLine({ price: 80, color: '#243043', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed });
+
     function resizeChart() {
         const container = document.getElementById('chart');
         chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+
+        const st = document.getElementById('stochChart');
+        stochChart.applyOptions({ width: st.clientWidth, height: st.clientHeight });
     }
 
     window.addEventListener('resize', resizeChart);
+
+    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+        if (!range) return;
+        stochChart.timeScale().setVisibleRange(range);
+    });
 
     async function loadSymbols() {
         const res = await fetch('/api/symbols', { headers: { 'Accept': 'application/json' } });
@@ -196,6 +298,127 @@
         if (elTo.value) params.set('to', elTo.value);
 
         return `/api/candles?${params.toString()}`;
+    }
+
+    function buildOverlaysUrl() {
+        const params = new URLSearchParams();
+        params.set('symbol', elSymbol.value);
+        params.set('timeframe', elTimeframe.value);
+
+        if (elFrom.value) params.set('from', elFrom.value);
+        if (elTo.value) params.set('to', elTo.value);
+
+        params.set('stoch_k', elStochK.value || '14');
+        params.set('stoch_d', elStochD.value || '3');
+        params.set('stoch_smooth', elStochSmooth.value || '3');
+
+        params.set('sr_lookback', elSrLookback.value || (elTimeframe.value === 'W1' ? '260' : '300'));
+        params.set('sr_max_levels', elSrLevels.value || '8');
+
+        return `/api/overlays?${params.toString()}`;
+    }
+
+    let srLines = [];
+
+    function clearSrLines() {
+        for (const l of srLines) {
+            try { series.removePriceLine(l); } catch (_) {}
+        }
+        srLines = [];
+    }
+
+    function clearStoch() {
+        stochKSeries.setData([]);
+        stochDSeries.setData([]);
+        stochMinSeries.setData([]);
+        stochMaxSeries.setData([]);
+        elStochWrap.classList.add('hidden');
+    }
+
+    function applyStochBounds(times) {
+        if (!times || times.length === 0) {
+            return;
+        }
+        const first = times[0];
+        const last = times[times.length - 1];
+        stochMinSeries.setData([{ time: first, value: 0 }, { time: last, value: 0 }]);
+        stochMaxSeries.setData([{ time: first, value: 100 }, { time: last, value: 100 }]);
+    }
+
+    async function loadOverlays() {
+        const wantSr = elShowSr.checked;
+        const wantStoch = elShowStoch.checked;
+
+        if (!wantSr && !wantStoch) {
+            clearSrLines();
+            clearStoch();
+            return;
+        }
+
+        setStatus('loading', 'Loading overlays...');
+
+        try {
+            const url = buildOverlaysUrl();
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const payload = await res.json();
+
+            if (!res.ok) {
+                const msg = payload?.message || `Request failed (${res.status})`;
+                throw new Error(msg);
+            }
+
+            const data = payload.data || {};
+
+            clearSrLines();
+            if (wantSr) {
+                const levels = Array.isArray(data.sr_levels) ? data.sr_levels : [];
+                for (const lvl of levels) {
+                    const price = Number(lvl.price);
+                    if (!Number.isFinite(price)) continue;
+                    const strength = Number(lvl.strength);
+                    const title = Number.isFinite(strength) ? `SR (${strength})` : 'SR';
+                    const pl = series.createPriceLine({
+                        price,
+                        color: '#fbbf24',
+                        lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed,
+                        axisLabelVisible: true,
+                        title,
+                    });
+                    srLines.push(pl);
+                }
+            }
+
+            clearStoch();
+            if (wantStoch) {
+                const k = Array.isArray(data?.stochastic?.k) ? data.stochastic.k : [];
+                const d = Array.isArray(data?.stochastic?.d) ? data.stochastic.d : [];
+
+                const kData = k.map(p => ({
+                    time: businessDayFromUnixSeconds(p.t),
+                    value: Number(p.value),
+                })).filter(p => Number.isFinite(p.value));
+
+                const dData = d.map(p => ({
+                    time: businessDayFromUnixSeconds(p.t),
+                    value: Number(p.value),
+                })).filter(p => Number.isFinite(p.value));
+
+                stochKSeries.setData(kData);
+                stochDSeries.setData(dData);
+
+                const times = (kData.length > 0 ? kData : dData).map(p => p.time);
+                applyStochBounds(times);
+
+                elStochWrap.classList.remove('hidden');
+                resizeChart();
+                stochChart.timeScale().fitContent();
+            }
+
+            setStatus('ok', lastOkStatusText);
+        } catch (e) {
+            setStatus('error', e?.message ? String(e.message) : 'Overlay error');
+        }
     }
 
     async function loadCandles() {
@@ -236,6 +459,8 @@
             if (count > 0) {
                 chart.timeScale().fitContent();
             }
+
+            await loadOverlays();
         } catch (e) {
             setStatus('error', e?.message ? String(e.message) : 'Unknown error');
         } finally {
@@ -245,6 +470,7 @@
 
     elReset.addEventListener('click', () => {
         applyDefaultRange();
+        applyIndicatorDefaults();
         loadCandles();
     });
 
@@ -252,14 +478,24 @@
 
     elTimeframe.addEventListener('change', () => {
         applyDefaultRange();
+        applyIndicatorDefaults();
         loadCandles();
     });
 
     elSymbol.addEventListener('change', () => loadCandles());
 
+    elShowSr.addEventListener('change', () => loadOverlays());
+    elShowStoch.addEventListener('change', () => loadOverlays());
+    elStochK.addEventListener('change', () => loadOverlays());
+    elStochD.addEventListener('change', () => loadOverlays());
+    elStochSmooth.addEventListener('change', () => loadOverlays());
+    elSrLookback.addEventListener('change', () => loadOverlays());
+    elSrLevels.addEventListener('change', () => loadOverlays());
+
     (async function init() {
         resizeChart();
         applyDefaultRange();
+        applyIndicatorDefaults();
         try {
             await loadSymbols();
             loadCandles();

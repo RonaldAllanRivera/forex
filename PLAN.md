@@ -389,14 +389,27 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 ---
 
 ## Phase 6 — Indicators + SR Levels
+- Implement deterministic indicator computation from stored candles (not live API calls)
 - Implement stochastic computation service
+  - Defaults (best-practice for D1/W1): `K=14`, `D=3`, `smooth=3` with thresholds `20/80`
+  - Must allow overriding params per request/UI (but default UI state is disabled)
 - Implement SR detection service (swing highs/lows + clustering)
-- Add endpoint to return computed overlays (or embed in signal response)
-- Prefer deterministic SR/indicator computation from stored candles (not live API calls)
+  - Defaults (best-practice): lookback window tuned per timeframe (D1 vs W1) and return a small set of strongest levels
+- Add endpoint to return computed overlays (for chart + later for AI signals)
+  - Example: `GET /api/overlays?symbol=EURUSD&timeframe=D1&stoch_k=14&stoch_d=3&stoch_smooth=3&sr_lookback=300`
+  - Response should include:
+    - Stochastic series (aligned to candle timestamps)
+    - SR levels (price + strength/score)
+- Update `/chart` to render overlays on the same page
+  - Add enable/disable toggles for each overlay (default OFF)
+  - Add controls for indicator parameters (with best-practice defaults for D1/W1)
+  - When disabled, do not fetch/render the overlay
 
 **Acceptance criteria**
 - Stoch values match known sample calculations
 - SR levels appear as reasonable horizontal lines on chart
+- Chart allows toggling overlays on/off (default OFF)
+- Chart allows changing indicator parameters and reloading overlays
 
 ---
 
@@ -406,6 +419,10 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - calls OpenAI
   - validates strict JSON output
   - stores to `signals` table
+- Prompt guidance (rule-of-thumb hierarchy):
+  1) Market structure + SR location (primary)
+  2) Momentum confirmation (Stoch) (secondary)
+  3) Risk framing (distance to SR, invalidation level)
 - Use analysis windows (best-practice):
   - D1: last ~300 candles for patterns/context
   - W1: last ~260 candles for bias + major SR
