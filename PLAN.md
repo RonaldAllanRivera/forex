@@ -332,7 +332,7 @@ If queues are enabled later:
 
 ---
 
-## Phase 4 — JSON API (IN PROGRESS)
+## Phase 4 — JSON API (COMPLETED)
 - Implement endpoints:
   - symbols
   - candles
@@ -343,9 +343,11 @@ If queues are enabled later:
 - `GET /api/symbols`
 - `GET /api/candles?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
 
+- `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
+- `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+
 **Status**
-- Implemented: `symbols`, `candles`
-- Pending: `latest signal`, `signal history`
+- Implemented: `symbols`, `candles`, `latest signal`, `signal history`
 - Add caching for read endpoints:
   - Server-side cache for common reads (candles ranges, latest signal)
   - Add `Cache-Control` headers to allow browser/proxy caching where safe
@@ -366,6 +368,10 @@ If queues are enabled later:
   - renders candlestick chart
   - switches between D1/W1
 - Basic UI for selecting symbol/timeframe
+- Default chart ranges (best-practice):
+  - D1: last 2 years
+  - W1: last 5 years
+- Optional: user-selectable date range (from/to) to load more/less history
 
 **Acceptance criteria**
 - Chart renders with correct timestamps and OHLC
@@ -377,6 +383,7 @@ If queues are enabled later:
 - Implement stochastic computation service
 - Implement SR detection service (swing highs/lows + clustering)
 - Add endpoint to return computed overlays (or embed in signal response)
+- Prefer deterministic SR/indicator computation from stored candles (not live API calls)
 
 **Acceptance criteria**
 - Stoch values match known sample calculations
@@ -390,6 +397,10 @@ If queues are enabled later:
   - calls OpenAI
   - validates strict JSON output
   - stores to `signals` table
+- Use analysis windows (best-practice):
+  - D1: last ~300 candles for patterns/context
+  - W1: last ~260 candles for bias + major SR
+  - Provide SR levels + indicator summaries to the model instead of sending multi-year raw OHLC
 - Add artisan command: `forex:generate-signals`
 
 **Acceptance criteria**
