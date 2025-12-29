@@ -39,6 +39,8 @@ The app is exposed on:
 Chart UI:
 - `http://localhost/chart` (root `/` redirects to `/chart`)
 
+Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date.
+
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
 

@@ -65,7 +65,7 @@
                 <span id="statusText" class="muted">Ready.</span>
             </div>
             <div class="muted">
-                Data source: local DB via <code>/api/candles</code>
+                Closed candles only (EOD) · <span id="lastClosed">Last closed: —</span> · Data source: local DB via <code>/api/candles</code>
             </div>
         </div>
         <div id="chart"></div>
@@ -87,6 +87,7 @@
     const elReset = document.getElementById('reset');
     const elStatusBadge = document.getElementById('statusBadge');
     const elStatusText = document.getElementById('statusText');
+    const elLastClosed = document.getElementById('lastClosed');
 
     function setStatus(kind, text) {
         elStatusBadge.textContent = kind;
@@ -114,6 +115,15 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
+    function businessDayFromUnixSeconds(t) {
+        const d = new Date(Number(t) * 1000);
+        return {
+            year: d.getUTCFullYear(),
+            month: d.getUTCMonth() + 1,
+            day: d.getUTCDate(),
+        };
+    }
+
     function defaultRange(timeframe) {
         const to = new Date();
         const from = new Date(to);
@@ -136,7 +146,7 @@
         layout: { background: { color: '#0b1222' }, textColor: '#e5e7eb' },
         grid: { vertLines: { color: '#111827' }, horzLines: { color: '#111827' } },
         rightPriceScale: { borderColor: '#243043' },
-        timeScale: { borderColor: '#243043', timeVisible: true, secondsVisible: false },
+        timeScale: { borderColor: '#243043', timeVisible: false, secondsVisible: false },
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     });
 
@@ -204,17 +214,23 @@
 
             const candles = Array.isArray(payload.data) ? payload.data : [];
             const chartData = candles.map(c => ({
-                time: Number(c.t),
+                time: businessDayFromUnixSeconds(c.t),
                 open: Number(c.o),
                 high: Number(c.h),
                 low: Number(c.l),
                 close: Number(c.c),
-            })).filter(p => Number.isFinite(p.time));
+            }));
 
             series.setData(chartData);
 
             const meta = payload.meta || {};
             const count = chartData.length;
+            if (candles.length > 0) {
+                const lastT = candles[candles.length - 1].t;
+                elLastClosed.textContent = `Last closed: ${fmtDate(new Date(Number(lastT) * 1000))}`;
+            } else {
+                elLastClosed.textContent = 'Last closed: —';
+            }
             setStatus('ok', `Loaded ${count} candles (${meta.symbol || elSymbol.value} ${meta.timeframe || elTimeframe.value}).`);
 
             if (count > 0) {

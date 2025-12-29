@@ -379,6 +379,8 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 **Status**
 - Implemented at `/chart` (root `/` redirects to `/chart`)
+- Chart intentionally shows only **closed (EOD) candles** (no in-progress daily candle)
+- D1/W1 time axis uses date-only display and surfaces `Last closed` date in the UI
 
 **Acceptance criteria**
 - Chart renders with correct timestamps and OHLC
