@@ -51,7 +51,7 @@ class OverlayController extends Controller
         $stochSmooth = (int) ($data['stoch_smooth'] ?? 3);
 
         $srLookback = (int) ($data['sr_lookback'] ?? ($timeframe === Timeframe::W1 ? 260 : 300));
-        $srMaxLevels = (int) ($data['sr_max_levels'] ?? 8);
+        $srMaxLevels = (int) ($data['sr_max_levels'] ?? 6);
         $srSwing = (int) ($data['sr_swing'] ?? 2);
         $srClusterPct = (float) ($data['sr_cluster_pct'] ?? ($timeframe === Timeframe::W1 ? 0.003 : 0.0015));
 

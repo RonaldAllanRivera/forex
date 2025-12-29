@@ -190,7 +190,7 @@
                 stochD: 3,
                 stochSmooth: 3,
                 srLookback: 260,
-                srLevels: 8,
+                srLevels: 6,
             };
         }
 
@@ -199,7 +199,7 @@
             stochD: 3,
             stochSmooth: 3,
             srLookback: 300,
-            srLevels: 8,
+            srLevels: 6,
         };
     }
 

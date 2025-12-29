@@ -63,7 +63,7 @@ class SupportResistanceService
             if ($isHigh) {
                 $pivots[] = ['price' => $h, 't' => (int) $c->t];
             }
-            if ($isLow) {
+            if (!$isHigh && $isLow) {
                 $pivots[] = ['price' => $l, 't' => (int) $c->t];
             }
         }
