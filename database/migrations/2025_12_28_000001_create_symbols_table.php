@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('symbols', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->string('provider')->default('finnhub');
+            $table->string('provider')->default('alphavantage');
             $table->string('provider_symbol');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

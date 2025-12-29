@@ -135,6 +135,21 @@ Alpha Vantage calls are protected by:
 - short-TTL response caching (`ALPHA_VANTAGE_CACHE_TTL_SECONDS`)
 - per-symbol/timeframe sync locks to prevent concurrent imports (`ALPHA_VANTAGE_LOCK_TTL_SECONDS`)
 
+## JSON API
+
+- `GET /api/symbols`
+- `GET /api/candles?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+Responses include a `meta` block with the resolved `symbol` and `timeframe`.
+
+Examples:
+
+```bash
+curl -sS "http://localhost/api/symbols" | jq
+curl -sS "http://localhost/api/candles?symbol=EURUSD&timeframe=D1" | jq
+curl -sS "http://localhost/api/candles?symbol=EURUSD&timeframe=D1&from=2025-01-01&to=2025-12-31" | jq
+```
+
 ## Project Plan
 See `PLAN.md` for phased delivery milestones.
 

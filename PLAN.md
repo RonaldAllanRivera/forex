@@ -332,12 +332,20 @@ If queues are enabled later:
 
 ---
 
-## Phase 4 — JSON API
+## Phase 4 — JSON API (IN PROGRESS)
 - Implement endpoints:
   - symbols
   - candles
   - latest signal
   - signal history
+
+**Endpoints**
+- `GET /api/symbols`
+- `GET /api/candles?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+
+**Status**
+- Implemented: `symbols`, `candles`
+- Pending: `latest signal`, `signal history`
 - Add caching for read endpoints:
   - Server-side cache for common reads (candles ranges, latest signal)
   - Add `Cache-Control` headers to allow browser/proxy caching where safe
@@ -347,6 +355,8 @@ If queues are enabled later:
 **Acceptance criteria**
 - API returns correct JSON for chart consumption
 - Validation errors return consistent responses
+- `GET /api/symbols` returns active symbols only
+- `GET /api/candles` validates `symbol` + `timeframe` and returns candles sorted by `t`
 
 ---
 

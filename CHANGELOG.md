@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- JSON API endpoints for symbols and candles (`GET /api/symbols`, `GET /api/candles`).
+
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
 - Updated environment variables to use `ALPHA_VANTAGE_*` for API key and rate-limit protection.
