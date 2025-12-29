@@ -34,9 +34,18 @@ Artisan::command('forex:sync-candles {--symbol=} {--timeframe=D1} {--from=} {--t
 
     $total = 0;
     foreach ($symbols as $symbol) {
-        $count = $sync->sync($symbol, $timeframe, $from, $to);
-        $total += $count;
-        $this->info(sprintf('%s %s: upserted %d candles', $symbol->code, $timeframe->value, $count));
+        $stats = $sync->syncWithStats($symbol, $timeframe, $from, $to);
+        $upserted = (int) ($stats['upserted'] ?? 0);
+        $total += $upserted;
+        $this->info(sprintf(
+            '%s %s: inserted=%d updated=%d unchanged=%d upserted=%d',
+            $symbol->code,
+            $timeframe->value,
+            (int) ($stats['inserted'] ?? 0),
+            (int) ($stats['updated'] ?? 0),
+            (int) ($stats['unchanged'] ?? 0),
+            $upserted,
+        ));
     }
 
     $this->info(sprintf('Done. Total upserted: %d', $total));

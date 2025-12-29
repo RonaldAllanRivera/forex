@@ -14,11 +14,6 @@ class SymbolSeeder extends Seeder
         $symbols = [
             ['code' => 'EURUSD', 'provider_symbol' => 'EUR/USD'],
             ['code' => 'USDJPY', 'provider_symbol' => 'USD/JPY'],
-            ['code' => 'GBPUSD', 'provider_symbol' => 'GBP/USD'],
-            ['code' => 'AUDUSD', 'provider_symbol' => 'AUD/USD'],
-            ['code' => 'USDCAD', 'provider_symbol' => 'USD/CAD'],
-            ['code' => 'USDCHF', 'provider_symbol' => 'USD/CHF'],
-            ['code' => 'NZDUSD', 'provider_symbol' => 'NZD/USD'],
         ];
 
         $rows = array_map(static function (array $s) use ($now): array {

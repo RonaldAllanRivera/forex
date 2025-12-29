@@ -18,12 +18,22 @@ class CandleSyncService
 
     public function sync(Symbol $symbol, Timeframe $timeframe, ?CarbonImmutable $from = null, ?CarbonImmutable $to = null): int
     {
+        $stats = $this->syncWithStats($symbol, $timeframe, $from, $to);
+
+        return (int) ($stats['upserted'] ?? 0);
+    }
+
+    /**
+     * @return array{inserted:int,updated:int,unchanged:int,upserted:int}
+     */
+    public function syncWithStats(Symbol $symbol, Timeframe $timeframe, ?CarbonImmutable $from = null, ?CarbonImmutable $to = null): array
+    {
         $lockTtlSeconds = (int) config('services.alphavantage.lock_ttl_seconds', 300);
         $lockKey = sprintf('lock:forex:sync:%s:%s', $symbol->id, $timeframe->value);
 
         $lock = Cache::lock($lockKey, $lockTtlSeconds);
         if (! $lock->get()) {
-            return 0;
+            return ['inserted' => 0, 'updated' => 0, 'unchanged' => 0, 'upserted' => 0];
         }
 
         try {
@@ -31,7 +41,7 @@ class CandleSyncService
             $from = $from ?? $this->defaultFrom($symbol, $timeframe, $to);
 
             if ($from->greaterThanOrEqualTo($to)) {
-                return 0;
+                return ['inserted' => 0, 'updated' => 0, 'unchanged' => 0, 'upserted' => 0];
             }
 
             if ($symbol->provider !== 'alphavantage') {
@@ -55,7 +65,7 @@ class CandleSyncService
             );
 
             if ($series === []) {
-                return 0;
+                return ['inserted' => 0, 'updated' => 0, 'unchanged' => 0, 'upserted' => 0];
             }
 
             $minT = $from->startOfDay()->timestamp;
@@ -92,21 +102,87 @@ class CandleSyncService
             usort($rows, static fn (array $a, array $b) => ((int) $a['t']) <=> ((int) $b['t']));
 
             if ($rows === []) {
-                return 0;
+                return ['inserted' => 0, 'updated' => 0, 'unchanged' => 0, 'upserted' => 0];
             }
 
-            return DB::transaction(function () use ($rows): int {
+            $existing = Candle::query()
+                ->where('symbol_id', $symbol->id)
+                ->where('timeframe', $timeframe->value)
+                ->whereIn('t', array_map(static fn (array $r): int => (int) $r['t'], $rows))
+                ->get(['t', 'o', 'h', 'l', 'c', 'v'])
+                ->keyBy('t');
+
+            $inserted = 0;
+            $updated = 0;
+            $unchanged = 0;
+            $rowsToUpsert = [];
+
+            foreach ($rows as $row) {
+                $t = (int) $row['t'];
+                $current = $existing->get($t);
+
+                if ($current === null) {
+                    $inserted++;
+                    $rowsToUpsert[] = $row;
+                    continue;
+                }
+
+                $o = $this->normalizeDecimal((string) $row['o']);
+                $h = $this->normalizeDecimal((string) $row['h']);
+                $l = $this->normalizeDecimal((string) $row['l']);
+                $c = $this->normalizeDecimal((string) $row['c']);
+                $v = $row['v'] === null ? null : $this->normalizeDecimal((string) $row['v']);
+
+                $isSame = (
+                    $o === (string) $current->o
+                    && $h === (string) $current->h
+                    && $l === (string) $current->l
+                    && $c === (string) $current->c
+                    && $v === ($current->v === null ? null : (string) $current->v)
+                );
+
+                if ($isSame) {
+                    $unchanged++;
+                    continue;
+                }
+
+                $updated++;
+                $row['o'] = $o;
+                $row['h'] = $h;
+                $row['l'] = $l;
+                $row['c'] = $c;
+                $row['v'] = $v;
+                $rowsToUpsert[] = $row;
+            }
+
+            if ($rowsToUpsert === []) {
+                return ['inserted' => $inserted, 'updated' => $updated, 'unchanged' => $unchanged, 'upserted' => 0];
+            }
+
+            $upserted = DB::transaction(function () use ($rowsToUpsert): int {
                 Candle::upsert(
-                    $rows,
+                    $rowsToUpsert,
                     ['symbol_id', 'timeframe', 't'],
                     ['o', 'h', 'l', 'c', 'v', 'updated_at']
                 );
 
-                return count($rows);
+                return count($rowsToUpsert);
             });
+
+            return ['inserted' => $inserted, 'updated' => $updated, 'unchanged' => $unchanged, 'upserted' => $upserted];
         } finally {
             optional($lock)->release();
         }
+    }
+
+    private function normalizeDecimal(?string $value): string
+    {
+        $value = $value ?? '';
+        if ($value === '') {
+            return '0.000000';
+        }
+
+        return number_format((float) $value, 6, '.', '');
     }
 
     private function defaultFrom(Symbol $symbol, Timeframe $timeframe, CarbonImmutable $to): CarbonImmutable

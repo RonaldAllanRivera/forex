@@ -65,7 +65,11 @@ Sync candles:
 ```bash
 docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=EURUSD
 docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=EURUSD
+docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=USDJPY
+docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=USDJPY
 ```
+
+The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to make overlap-window behavior explicit.
 
 ### Tests
 ```bash
