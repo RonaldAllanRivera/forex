@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - JSON API endpoints for symbols and candles (`GET /api/symbols`, `GET /api/candles`).
+- JSON API endpoint for overlays (`GET /api/overlays`) returning SR levels and Stochastic series.
 - JSON API endpoints for signals (`GET /api/signals/latest`, `GET /api/signals`).
 - Lightweight Charts UI at `/chart`.
 - Chart UI now surfaces `Last closed` date and explicitly indicates closed (EOD) candles only.
+- Chart UI indicator controls (default OFF) for SR + Stochastic, including a second Stochastic panel.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).

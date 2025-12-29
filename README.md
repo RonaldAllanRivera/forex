@@ -148,6 +148,7 @@ Alpha Vantage calls are protected by:
 
 - `GET /api/symbols`
 - `GET /api/candles?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/overlays?symbol=EURUSD&timeframe=D1` (SR levels + Stochastic overlays)
 - `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
 
@@ -159,6 +160,7 @@ Examples:
 curl -sS "http://localhost/api/symbols" | jq
 curl -sS "http://localhost/api/candles?symbol=EURUSD&timeframe=D1" | jq
 curl -sS "http://localhost/api/candles?symbol=EURUSD&timeframe=D1&from=2025-01-01&to=2025-12-31" | jq
+curl -sS "http://localhost/api/overlays?symbol=EURUSD&timeframe=D1" | jq
 curl -sS "http://localhost/api/signals/latest?symbol=EURUSD&timeframe=D1" | jq
 curl -sS "http://localhost/api/signals?symbol=EURUSD&timeframe=D1&from=2025-01-01&to=2025-12-31" | jq
 ```

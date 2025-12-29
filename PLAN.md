@@ -388,7 +388,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ---
 
-## Phase 6 — Indicators + SR Levels
+## Phase 6 — Indicators + SR Levels (COMPLETED)
 - Implement deterministic indicator computation from stored candles (not live API calls)
 - Implement stochastic computation service
   - Defaults (best-practice for D1/W1): `K=14`, `D=3`, `smooth=3` with thresholds `20/80`
@@ -404,6 +404,11 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - Add enable/disable toggles for each overlay (default OFF)
   - Add controls for indicator parameters (with best-practice defaults for D1/W1)
   - When disabled, do not fetch/render the overlay
+
+**Status**
+- Implemented `/api/overlays` endpoint (SR + Stochastic)
+- Chart renders SR horizontal lines + Stochastic in a second panel with toggles (default OFF)
+- Tests added for overlays endpoint and indicator correctness
 
 **Acceptance criteria**
 - Stoch values match known sample calculations
