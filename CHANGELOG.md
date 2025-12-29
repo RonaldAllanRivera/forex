@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - JSON API endpoints for symbols and candles (`GET /api/symbols`, `GET /api/candles`).
 - JSON API endpoints for signals (`GET /api/signals/latest`, `GET /api/signals`).
+- Lightweight Charts UI at `/chart`.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated candle sync/seeding and tests to use Alpha Vantage response format.
 - Improved candle sync command output to show inserted/updated/unchanged/upserted and avoid no-op upserts.
 - Default seeded symbols reduced to EURUSD and USDJPY.
+- Root route `/` now redirects to `/chart`.
 
 ## [0.1.0] - 2025-12-28
 ### Added

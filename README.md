@@ -36,6 +36,9 @@ docker compose up -d --build
 The app is exposed on:
 - `http://localhost` (port `80` by default)
 
+Chart UI:
+- `http://localhost/chart` (root `/` redirects to `/chart`)
+
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
 

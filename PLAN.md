@@ -366,7 +366,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ---
 
-## Phase 5 — Chart UI (Lightweight Charts)
+## Phase 5 — Chart UI (Lightweight Charts) (COMPLETED)
 - Blade page that:
   - fetches candle JSON
   - renders candlestick chart
@@ -376,6 +376,9 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - D1: last 2 years
   - W1: last 5 years
 - Optional: user-selectable date range (from/to) to load more/less history
+
+**Status**
+- Implemented at `/chart` (root `/` redirects to `/chart`)
 
 **Acceptance criteria**
 - Chart renders with correct timestamps and OHLC
