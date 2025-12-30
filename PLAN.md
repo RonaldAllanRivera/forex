@@ -1,16 +1,16 @@
-# Laravel Forex Candles + AI Signals (D1/W1) — Implementation Plan
+# Laravel Forex Candles + AI Signals (D1/W1/MN1) — Implementation Plan
 
 ## Scope
 Build a Laravel 12 (PHP 8.2+) app that:
 
-- Fetches **FREE** Forex candlestick data from **Alpha Vantage** (Daily + Weekly only)
+- Fetches **FREE** Forex candlestick data from **Alpha Vantage** (Daily + Weekly + Monthly)
 - Stores candles in **MySQL** with **idempotent** imports
 - Exposes a **JSON API** for candles and AI signals
 - Renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** in **Blade** (vanilla JS)
 - Generates a **daily** AI **BUY/SELL/WAIT** signal + explanation based on **price action**, **support/resistance**, and **Stochastic Oscillator**
 - Sends an email notification (manual trading on XM; **no auto-execution**)
 
-Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, EURUSD). This plan keeps analysis **low-stress** by focusing strictly on **D1/W1** decision-making with a simple, repeatable checklist.
+Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, EURUSD). This plan keeps analysis **low-stress** by focusing strictly on higher timeframes (**D1/W1/MN1**) decision-making with a simple, repeatable checklist.
 
 ---
 
@@ -49,7 +49,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
   - `AlphaVantageClient` (HTTP)
   - `OpenAiClient` (HTTP)
 - **Jobs/Commands** (Scheduler)
-  - `forex:sync-candles` (idempotent, D1/W1)
+  - `forex:sync-candles` (idempotent, D1/W1/MN1)
   - `forex:generate-signals` (per symbol + timeframe)
   - `forex:send-daily-email` (digest)
 - **UI**
@@ -62,6 +62,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 - Use Alpha Vantage FX time series endpoints:
   - `FX_DAILY`
   - `FX_WEEKLY`
+  - `FX_MONTHLY`
 - Store symbols in `symbols.provider_symbol` as `FROM/TO` (e.g. `EUR/USD`, `USD/JPY`).
 - Use `outputsize=compact` for recent ranges, `outputsize=full` for backfills.
 
@@ -79,7 +80,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 ### `candles`
 - `id`
 - `symbol_id`
-- `timeframe` (enum: `D1`, `W1`)
+- `timeframe` (enum: `D1`, `W1`, `MN1`)
 - `t` (unix timestamp in seconds; open time)
 - `o`, `h`, `l`, `c` (decimal)
 - `v` (decimal or bigint; may be 0/nullable for forex)
@@ -134,7 +135,7 @@ Base: `/api`
   - Self-host via npm build (preferred) OR CDN fallback
 - Page features:
   - Candlestick chart
-  - Toggle timeframe: **D1/W1 only**
+  - Toggle timeframe: **D1/W1/MN1**
   - Overlays:
     - horizontal lines for computed support/resistance levels
   - Sidebar panel:
@@ -165,7 +166,7 @@ These levels are used to *guide* the AI narrative, not to automate entries.
 ### Output contract
 - Enforce strict JSON output:
   - `signal`: `BUY | SELL | WAIT`
-  - `timeframe`: `D1 | W1`
+  - `timeframe`: `D1 | W1 | MN1`
   - `bias`: `bullish | bearish | neutral`
   - `key_levels`: array of levels with type `support|resistance`
   - `setup`: candlestick/price-action description
@@ -179,7 +180,7 @@ These levels are used to *guide* the AI narrative, not to automate entries.
 - Computed stoch values (%K/%D, last ~30)
 - Computed SR levels
 - Constraints:
-  - Only D1/W1
+  - Only D1/W1/MN1
   - Favor clean, high-quality setups near SR
   - Prefer WAIT when unclear
   - No leverage advice, no position sizing, no guaranteed outcomes
@@ -325,14 +326,16 @@ If queues are enabled later:
 - Sync example:
   - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=EURUSD`
   - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=EURUSD`
+  - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=MN1 --symbol=EURUSD`
   - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=USDJPY`
   - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=USDJPY`
+  - `docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=MN1 --symbol=USDJPY`
 
 The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to make overlap-window behavior explicit.
 
 **Acceptance criteria**
 - Running the command multiple times results in no duplicates
-- Candles are stored for D1 and W1
+- Candles are stored for D1, W1, and MN1
 
 ---
 
@@ -370,21 +373,29 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - Blade page that:
   - fetches candle JSON
   - renders candlestick chart
-  - switches between D1/W1
+  - switches between D1/W1/MN1
 - Basic UI for selecting symbol/timeframe
 - Default chart ranges (best-practice):
   - D1: last 2 years
   - W1: last 5 years
+  - MN1: last 15 years
 - Optional: user-selectable date range (from/to) to load more/less history
+
+**Planned: Sync from Alpha Vantage (button on `/chart`, auth later)**
+- Button on `/chart`: “Sync from Alpha Vantage”
+- Protected: only in local/staging, or behind auth/admin role (to be added later)
+- Async: dispatch a queued job (don’t block the UI)
+- Rate-limited & locked: one sync per symbol+timeframe at a time
+- UX: show “Sync queued / last synced at / last error” + a spinner while polling status
 
 **Status**
 - Implemented at `/chart` (root `/` redirects to `/chart`)
 - Chart intentionally shows only **closed (EOD) candles** (no in-progress daily candle)
-- D1/W1 time axis uses date-only display and surfaces `Last closed` date in the UI
+- D1/W1/MN1 time axis uses date-only display and surfaces `Last closed` date in the UI
 
 **Acceptance criteria**
 - Chart renders with correct timestamps and OHLC
-- D1/W1 toggles work
+- D1/W1/MN1 toggles work
 
 ---
 
@@ -431,6 +442,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - Use analysis windows (best-practice):
   - D1: last ~300 candles for patterns/context
   - W1: last ~260 candles for bias + major SR
+  - MN1: last ~120 candles for macro regime + long-term SR context
   - Provide SR levels + indicator summaries to the model instead of sending multi-year raw OHLC
 - Add artisan command: `forex:generate-signals`
 

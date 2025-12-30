@@ -196,6 +196,7 @@ class CandleSyncService
             $overlap = match ($timeframe) {
                 Timeframe::D1 => 60 * 60 * 24 * 30,
                 Timeframe::W1 => 60 * 60 * 24 * 90,
+                Timeframe::MN1 => 60 * 60 * 24 * 365,
             };
 
             return CarbonImmutable::createFromTimestampUTC((int) $latestT)->subSeconds($overlap);
@@ -204,6 +205,7 @@ class CandleSyncService
         $backfillDays = match ($timeframe) {
             Timeframe::D1 => 365 * 2,
             Timeframe::W1 => 365 * 5,
+            Timeframe::MN1 => 365 * 15,
         };
 
         return $to->subDays($backfillDays);

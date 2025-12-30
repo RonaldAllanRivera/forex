@@ -98,4 +98,32 @@ class ApiCandlesTest extends TestCase
         $response->assertJsonCount(1, 'data');
         $response->assertJsonPath('data.0.t', 1735776000);
     }
+
+    public function test_it_accepts_mn1_timeframe(): void
+    {
+        $symbol = Symbol::query()->create([
+            'code' => 'EURUSD',
+            'provider' => 'alphavantage',
+            'provider_symbol' => 'EUR/USD',
+            'is_active' => true,
+        ]);
+
+        Candle::query()->create([
+            'symbol_id' => $symbol->id,
+            'timeframe' => Timeframe::MN1->value,
+            't' => 1735689600,
+            'o' => '1.1000',
+            'h' => '1.1200',
+            'l' => '1.0900',
+            'c' => '1.1150',
+            'v' => null,
+        ]);
+
+        $response = $this->getJson('/api/candles?symbol=EURUSD&timeframe=MN1');
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('meta.symbol', 'EURUSD');
+        $response->assertJsonPath('meta.timeframe', 'MN1');
+    }
 }

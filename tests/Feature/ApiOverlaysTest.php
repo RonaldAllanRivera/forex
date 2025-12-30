@@ -124,4 +124,24 @@ class ApiOverlaysTest extends TestCase
         $this->assertEqualsWithDelta(1.03, (float) $sr[0]['price'], 0.0001);
         $this->assertSame(1, (int) $sr[0]['strength']);
     }
+
+    public function test_it_returns_mn1_default_overlay_params(): void
+    {
+        Symbol::query()->create([
+            'code' => 'EURUSD',
+            'provider' => 'alphavantage',
+            'provider_symbol' => 'EUR/USD',
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson('/api/overlays?symbol=EURUSD&timeframe=MN1');
+
+        $response->assertOk();
+        $response->assertJsonPath('meta.timeframe', 'MN1');
+        $response->assertJsonPath('data.sr_params.lookback', 180);
+        $response->assertJsonPath('data.sr_params.cluster_pct', 0.006);
+        $response->assertJsonPath('data.stochastic.params.k', 14);
+        $response->assertJsonPath('data.stochastic.params.d', 3);
+        $response->assertJsonPath('data.stochastic.params.smooth', 3);
+    }
 }

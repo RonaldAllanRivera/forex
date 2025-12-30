@@ -51,4 +51,4 @@ Artisan::command('forex:sync-candles {--symbol=} {--timeframe=D1} {--from=} {--t
     $this->info(sprintf('Done. Total upserted: %d', $total));
 
     return self::SUCCESS;
-})->purpose('Sync Forex candles from Alpha Vantage (D1/W1 only)');
+})->purpose('Sync Forex candles from Alpha Vantage (D1/W1/MN1)');

@@ -26,6 +26,7 @@ class AlphaVantageClient
         $function = match ($timeframe) {
             'D1' => 'FX_DAILY',
             'W1' => 'FX_WEEKLY',
+            'MN1' => 'FX_MONTHLY',
             default => throw new RuntimeException('Unsupported timeframe for Alpha Vantage: '.$timeframe),
         };
 
@@ -79,6 +80,7 @@ class AlphaVantageClient
             $seriesKey = match ($function) {
                 'FX_DAILY' => 'Time Series FX (Daily)',
                 'FX_WEEKLY' => 'Time Series FX (Weekly)',
+                'FX_MONTHLY' => 'Time Series FX (Monthly)',
                 default => null,
             };
 

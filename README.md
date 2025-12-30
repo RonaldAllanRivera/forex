@@ -1,13 +1,13 @@
 # Forex Signals — Laravel 12
 
-Production-minded Laravel 12 application for **D1/W1 Forex market analysis**.
+Production-minded Laravel 12 application for **D1/W1/MN1 Forex market analysis**.
 
-The system ingests **daily/weekly candlestick data** from Alpha Vantage, stores it with **idempotent imports**, exposes a clean **JSON API**, and renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** (Blade + vanilla JS). It also produces a **daily signal** (BUY/SELL/WAIT) with a structured explanation and sends a notification email.
+The system ingests **daily/weekly/monthly candlestick data** from Alpha Vantage, stores it with **idempotent imports**, exposes a clean **JSON API**, and renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** (Blade + vanilla JS). It also produces a **daily signal** (BUY/SELL/WAIT) with a structured explanation and sends a notification email.
 
-This repository is intentionally scoped to **higher timeframes only (D1/W1)** to keep decision-making consistent and low-noise.
+This repository is intentionally scoped to **higher timeframes only (D1/W1/MN1)** to keep decision-making consistent and low-noise.
 
 ## Highlights
-- Alpha Vantage candles ingestion (D1/W1) with retries, backoff, and idempotency
+- Alpha Vantage candles ingestion (D1/W1/MN1) with retries, backoff, and idempotency
 - MySQL persistence with unique constraints to prevent duplicates
 - JSON API for candles and signal history
 - Blade UI + TradingView Lightweight Charts (vanilla JS)
@@ -39,7 +39,7 @@ The app is exposed on:
 Chart UI:
 - `http://localhost/chart` (root `/` redirects to `/chart`)
 
-Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date.
+Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date. Indicator controls are optional and live in a collapsible section below the chart.
 
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
@@ -70,8 +70,10 @@ Sync candles:
 ```bash
 docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=EURUSD
 docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=EURUSD
+docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=MN1 --symbol=EURUSD
 docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=D1 --symbol=USDJPY
 docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=W1 --symbol=USDJPY
+docker compose exec -T laravel.test php artisan forex:sync-candles --timeframe=MN1 --symbol=USDJPY
 ```
 
 The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to make overlap-window behavior explicit.
@@ -112,7 +114,7 @@ Mail:
 
 - **Domain**
   - `Symbol` — tracked instruments (e.g. EURUSD) mapped to provider symbols
-  - `Candle` — OHLCV per symbol and timeframe (D1/W1)
+  - `Candle` — OHLCV per symbol and timeframe (D1/W1/MN1)
   - `Signal` — daily/weekly stored outputs with explanation and metadata
 
 - **Services**

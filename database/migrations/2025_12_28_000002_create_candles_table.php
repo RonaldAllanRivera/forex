@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('candles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('symbol_id')->constrained()->cascadeOnDelete();
-            $table->string('timeframe', 2);
+            $table->string('timeframe', 3);
             $table->unsignedBigInteger('t');
             $table->decimal('o', 16, 6);
             $table->decimal('h', 16, 6);

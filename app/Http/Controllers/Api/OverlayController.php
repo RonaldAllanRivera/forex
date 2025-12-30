@@ -50,10 +50,18 @@ class OverlayController extends Controller
         $stochD = (int) ($data['stoch_d'] ?? 3);
         $stochSmooth = (int) ($data['stoch_smooth'] ?? 3);
 
-        $srLookback = (int) ($data['sr_lookback'] ?? ($timeframe === Timeframe::W1 ? 260 : 300));
+        $srLookback = (int) ($data['sr_lookback'] ?? match ($timeframe) {
+            Timeframe::W1 => 260,
+            Timeframe::MN1 => 180,
+            default => 300,
+        });
         $srMaxLevels = (int) ($data['sr_max_levels'] ?? 6);
         $srSwing = (int) ($data['sr_swing'] ?? 2);
-        $srClusterPct = (float) ($data['sr_cluster_pct'] ?? ($timeframe === Timeframe::W1 ? 0.003 : 0.0015));
+        $srClusterPct = (float) ($data['sr_cluster_pct'] ?? match ($timeframe) {
+            Timeframe::W1 => 0.003,
+            Timeframe::MN1 => 0.006,
+            default => 0.0015,
+        });
 
         $stoch = $this->stochasticService->compute($candles, $stochK, $stochD, $stochSmooth);
         $sr = $this->supportResistanceService->compute($candles, $srLookback, $srMaxLevels, $srSwing, $srClusterPct);

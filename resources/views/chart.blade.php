@@ -16,6 +16,15 @@
         select, input { background: #111827; border: 1px solid #243043; border-radius: 8px; padding: 10px 12px; color: #e5e7eb; min-width: 140px; }
         input[type="date"] { min-width: 160px; }
         input[type="number"] { min-width: 110px; }
+        details.disclosure { border: 1px solid #243043; border-radius: 10px; background: #0b1222; padding: 8px 10px; width: 100%; }
+        details.disclosure summary { cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        details.disclosure summary::-webkit-details-marker { display: none; }
+        details.disclosure summary .summary-title { font-size: 12px; color: #e5e7eb; font-weight: 600; }
+        details.disclosure summary .summary-sub { font-size: 12px; color: #9ca3af; }
+        details.disclosure summary .chev { color: #9ca3af; font-size: 12px; }
+        details.disclosure[open] summary .chev { transform: rotate(180deg); }
+        details.disclosure .disclosure-body { margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
+        details.disclosure .disclosure-body .full { grid-column: 1 / -1; }
         .toggle-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border: 1px solid #243043; border-radius: 8px; background: #111827; }
         .toggle { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #e5e7eb; }
         .toggle input { min-width: auto; width: 16px; height: 16px; padding: 0; }
@@ -39,7 +48,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <div class="title">Forex Chart (D1 / W1)</div>
+        <div class="title">Forex Chart (D1 / W1 / MN1)</div>
         <div class="controls">
             <div class="field">
                 <label for="symbol">Symbol</label>
@@ -50,6 +59,7 @@
                 <select id="timeframe">
                     <option value="D1">D1</option>
                     <option value="W1">W1</option>
+                    <option value="MN1">MN1</option>
                 </select>
             </div>
             <div class="field">
@@ -59,33 +69,6 @@
             <div class="field">
                 <label for="to">To (optional)</label>
                 <input id="to" type="date" />
-            </div>
-            <div class="field">
-                <label>Indicators (default off)</label>
-                <div class="toggle-row">
-                    <label class="toggle"><input id="showSr" type="checkbox" />SR</label>
-                    <label class="toggle"><input id="showStoch" type="checkbox" />Stoch</label>
-                </div>
-            </div>
-            <div class="field">
-                <label for="stochK">Stoch K</label>
-                <input id="stochK" type="number" min="2" max="100" step="1" />
-            </div>
-            <div class="field">
-                <label for="stochD">Stoch D</label>
-                <input id="stochD" type="number" min="1" max="50" step="1" />
-            </div>
-            <div class="field">
-                <label for="stochSmooth">Stoch Smooth</label>
-                <input id="stochSmooth" type="number" min="1" max="50" step="1" />
-            </div>
-            <div class="field">
-                <label for="srLookback">SR Lookback</label>
-                <input id="srLookback" type="number" min="50" max="2000" step="1" />
-            </div>
-            <div class="field">
-                <label for="srLevels">SR Levels</label>
-                <input id="srLevels" type="number" min="1" max="50" step="1" />
             </div>
             <button id="load">Load</button>
             <button id="reset" class="secondary">Reset range</button>
@@ -108,8 +91,49 @@
         </div>
     </div>
 
+    <div style="margin-top: 12px;">
+        <details class="disclosure">
+            <summary>
+                <div>
+                    <div class="summary-title">Indicators</div>
+                    <div class="summary-sub">Optional (default off)</div>
+                </div>
+                <div class="chev">▼</div>
+            </summary>
+            <div class="disclosure-body">
+                <div class="field full">
+                    <label>Enable</label>
+                    <div class="toggle-row">
+                        <label class="toggle"><input id="showSr" type="checkbox" />SR</label>
+                        <label class="toggle"><input id="showStoch" type="checkbox" />Stoch</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="stochK">Stoch K</label>
+                    <input id="stochK" type="number" min="2" max="100" step="1" />
+                </div>
+                <div class="field">
+                    <label for="stochD">Stoch D</label>
+                    <input id="stochD" type="number" min="1" max="50" step="1" />
+                </div>
+                <div class="field">
+                    <label for="stochSmooth">Stoch Smooth</label>
+                    <input id="stochSmooth" type="number" min="1" max="50" step="1" />
+                </div>
+                <div class="field">
+                    <label for="srLookback">SR Lookback</label>
+                    <input id="srLookback" type="number" min="50" max="2000" step="1" />
+                </div>
+                <div class="field">
+                    <label for="srLevels">SR Levels</label>
+                    <input id="srLevels" type="number" min="1" max="50" step="1" />
+                </div>
+            </div>
+        </details>
+    </div>
+
     <div class="footer muted">
-        <div>Defaults: D1 = last 2 years, W1 = last 5 years</div>
+        <div>Defaults: D1 = last 2 years, W1 = last 5 years, MN1 = last 15 years</div>
         <div><a href="/">Home</a></div>
     </div>
 </div>
@@ -177,6 +201,8 @@
         const from = new Date(to);
         if (timeframe === 'W1') {
             from.setUTCDate(from.getUTCDate() - 365 * 5);
+        } else if (timeframe === 'MN1') {
+            from.setUTCDate(from.getUTCDate() - 365 * 15);
         } else {
             from.setUTCDate(from.getUTCDate() - 365 * 2);
         }
@@ -190,6 +216,16 @@
                 stochD: 3,
                 stochSmooth: 3,
                 srLookback: 260,
+                srLevels: 6,
+            };
+        }
+
+        if (timeframe === 'MN1') {
+            return {
+                stochK: 14,
+                stochD: 3,
+                stochSmooth: 3,
+                srLookback: 180,
                 srLevels: 6,
             };
         }
@@ -312,8 +348,8 @@
         params.set('stoch_d', elStochD.value || '3');
         params.set('stoch_smooth', elStochSmooth.value || '3');
 
-        params.set('sr_lookback', elSrLookback.value || (elTimeframe.value === 'W1' ? '260' : '300'));
-        params.set('sr_max_levels', elSrLevels.value || '8');
+        params.set('sr_lookback', elSrLookback.value || (elTimeframe.value === 'W1' ? '260' : (elTimeframe.value === 'MN1' ? '180' : '300')));
+        params.set('sr_max_levels', elSrLevels.value || '6');
 
         return `/api/overlays?${params.toString()}`;
     }
@@ -436,13 +472,37 @@
             }
 
             const candles = Array.isArray(payload.data) ? payload.data : [];
-            const chartData = candles.map(c => ({
-                time: businessDayFromUnixSeconds(c.t),
-                open: Number(c.o),
-                high: Number(c.h),
-                low: Number(c.l),
-                close: Number(c.c),
-            }));
+            const sorted = [...candles].sort((a, b) => Number(a.t) - Number(b.t));
+            const seenT = new Set();
+            let skipped = 0;
+
+            const chartData = [];
+            for (const c of sorted) {
+                const t = Number(c.t);
+                const open = Number(c.o);
+                const high = Number(c.h);
+                const low = Number(c.l);
+                const close = Number(c.c);
+
+                if (!Number.isFinite(t) || !Number.isFinite(open) || !Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) {
+                    skipped++;
+                    continue;
+                }
+
+                if (seenT.has(t)) {
+                    skipped++;
+                    continue;
+                }
+                seenT.add(t);
+
+                chartData.push({
+                    time: businessDayFromUnixSeconds(t),
+                    open,
+                    high,
+                    low,
+                    close,
+                });
+            }
 
             series.setData(chartData);
 
@@ -454,7 +514,12 @@
             } else {
                 elLastClosed.textContent = 'Last closed: —';
             }
-            setStatus('ok', `Loaded ${count} candles (${meta.symbol || elSymbol.value} ${meta.timeframe || elTimeframe.value}).`);
+            const baseMsg = `Loaded ${count} candles (${meta.symbol || elSymbol.value} ${meta.timeframe || elTimeframe.value}).`;
+            if (skipped > 0) {
+                setStatus('ok', `${baseMsg} Skipped ${skipped} invalid/duplicate rows.`);
+            } else {
+                setStatus('ok', baseMsg);
+            }
 
             if (count > 0) {
                 chart.timeScale().fitContent();
@@ -462,7 +527,8 @@
 
             await loadOverlays();
         } catch (e) {
-            setStatus('error', e?.message ? String(e.message) : 'Unknown error');
+            const msg = e?.message ? String(e.message) : 'Unknown error';
+            setStatus('error', `${msg}`);
         } finally {
             elLoad.disabled = false;
         }
