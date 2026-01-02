@@ -22,6 +22,21 @@ services:
         networks:
             - forex
 
+    queue:
+        image: sail-8.3/app
+        command: php artisan queue:work --tries=1 --timeout=300 --sleep=1
+        environment:
+            WWWUSER: '${WWWUSER:-1000}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - forex
+        depends_on:
+            mysql:
+                condition: service_healthy
+        restart: unless-stopped
+
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Monthly timeframe (MN1) support end-to-end (sync + API + chart selector).
 - Optional Volume histogram panel below price.
 - Synchronized zoom/pan across price + volume + stochastic panels.
+- Candle sync status tracking (`candle_sync_statuses`) and API endpoints to sync all timeframes from `/chart`.
+- Docker Compose `queue` service that runs `php artisan queue:work` for local development.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chart indicator controls are now tucked into a collapsible section below the chart to reduce UI clutter.
 - Indicator parameter inputs are disabled unless their indicator is enabled.
 - Chart candle loading filters invalid/duplicate points before calling Lightweight Charts to avoid runtime errors.
+- `/chart` sync action now uses a single **Sync all timeframes** button (D1/W1/MN1) and polls status via `status-all`.
 
 ## [0.1.0] - 2025-12-28
 ### Added

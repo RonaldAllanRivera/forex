@@ -18,7 +18,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 - No intraday timeframes (no M15/H1/H4)
 - No order execution / broker integration
 - No SPA (Blade + vanilla JS only)
-- No always-on workers required (queues optional)
+- No always-on workers required in production (queues can be managed by the host)
 
 ---
 
@@ -381,12 +381,14 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - MN1: last 15 years
 - Optional: user-selectable date range (from/to) to load more/less history
 
-**Planned: Sync from Alpha Vantage (button on `/chart`, auth later)**
-- Button on `/chart`: “Sync from Alpha Vantage”
+**Sync from Alpha Vantage (button on `/chart`, auth later)**
+- Button on `/chart`: “Sync all timeframes”
+- Scope: syncs **D1/W1/MN1** for the selected symbol
 - Protected: only in local/staging, or behind auth/admin role (to be added later)
-- Async: dispatch a queued job (don’t block the UI)
+- Async: dispatch queued jobs (don’t block the UI)
 - Rate-limited & locked: one sync per symbol+timeframe at a time
-- UX: show “Sync queued / last synced at / last error” + a spinner while polling status
+- UX: show per-timeframe status (`D1/W1/MN1`) + spinner while polling status
+- Local DX: Docker Compose includes a dedicated `queue` service so the worker runs automatically
 
 **Status**
 - Implemented at `/chart` (root `/` redirects to `/chart`)

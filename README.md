@@ -42,6 +42,8 @@ Chart UI:
 
 Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date. Indicator controls are optional and live in a collapsible section below the chart; indicator panels stay aligned during zoom/pan.
 
+In local/staging/testing, `/chart` includes a **Sync all timeframes** button that queues a background sync for **D1/W1/MN1** for the selected symbol. The UI polls status and shows per-timeframe progress.
+
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
 
@@ -82,6 +84,15 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 ### Tests
 ```bash
 docker compose exec -T laravel.test php artisan test
+```
+
+### Queue worker
+This project uses `QUEUE_CONNECTION=database` by default.
+
+For local development, Docker Compose starts a dedicated `queue` service that runs `php artisan queue:work` automatically. You typically only need:
+
+```bash
+docker compose up -d
 ```
 
 ### Stop
@@ -151,6 +162,8 @@ Alpha Vantage calls are protected by:
 
 - `GET /api/symbols`
 - `GET /api/candles?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `POST /api/sync-candles/all` (local/staging/testing only)
+- `GET /api/sync-candles/status-all?symbol=EURUSD` (local/staging/testing only)
 - `GET /api/overlays?symbol=EURUSD&timeframe=D1` (SR levels + Stochastic overlays)
 - `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
