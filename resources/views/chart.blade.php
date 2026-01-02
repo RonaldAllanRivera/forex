@@ -16,6 +16,7 @@
         select, input { background: #111827; border: 1px solid #243043; border-radius: 8px; padding: 10px 12px; color: #e5e7eb; min-width: 140px; }
         input[type="date"] { min-width: 160px; }
         input[type="number"] { min-width: 110px; }
+        input:disabled { opacity: .55; cursor: not-allowed; }
         details.disclosure { border: 1px solid #243043; border-radius: 10px; background: #0b1222; padding: 8px 10px; width: 100%; }
         details.disclosure summary { cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         details.disclosure summary::-webkit-details-marker { display: none; }
@@ -33,6 +34,8 @@
         button:disabled { opacity: .6; cursor: not-allowed; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
         #chart { height: 560px; border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
+        #volWrap { border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
+        #volChart { height: 140px; }
         #stochWrap { border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
         #stochChart { height: 180px; }
         .hidden { display: none; }
@@ -86,6 +89,9 @@
             </div>
         </div>
         <div id="chart"></div>
+        <div id="volWrap" class="hidden">
+            <div id="volChart"></div>
+        </div>
         <div id="stochWrap" class="hidden">
             <div id="stochChart"></div>
         </div>
@@ -104,9 +110,14 @@
                 <div class="field full">
                     <label>Enable</label>
                     <div class="toggle-row">
+                        <label class="toggle"><input id="showVol" type="checkbox" />Volume</label>
                         <label class="toggle"><input id="showSr" type="checkbox" />SR</label>
                         <label class="toggle"><input id="showStoch" type="checkbox" />Stoch</label>
                     </div>
+                </div>
+                <div class="field full">
+                    <label>Notes</label>
+                    <div class="muted">FX volume is often unavailable. When provider volume is missing, the chart shows a simple activity proxy (range).</div>
                 </div>
                 <div class="field">
                     <label for="stochK">Stoch K</label>
@@ -149,6 +160,7 @@
     const elStatusBadge = document.getElementById('statusBadge');
     const elStatusText = document.getElementById('statusText');
     const elLastClosed = document.getElementById('lastClosed');
+    const elShowVol = document.getElementById('showVol');
     const elShowSr = document.getElementById('showSr');
     const elShowStoch = document.getElementById('showStoch');
     const elStochK = document.getElementById('stochK');
@@ -156,6 +168,7 @@
     const elStochSmooth = document.getElementById('stochSmooth');
     const elSrLookback = document.getElementById('srLookback');
     const elSrLevels = document.getElementById('srLevels');
+    const elVolWrap = document.getElementById('volWrap');
     const elStochWrap = document.getElementById('stochWrap');
 
     let lastOkStatusText = 'Ready.';
@@ -273,6 +286,20 @@
         wickDownColor: '#ef4444',
     });
 
+    const volChart = LightweightCharts.createChart(document.getElementById('volChart'), {
+        layout: { background: { color: '#0b1222' }, textColor: '#e5e7eb' },
+        grid: { vertLines: { color: '#111827' }, horzLines: { color: '#111827' } },
+        rightPriceScale: { borderColor: '#243043' },
+        timeScale: { borderColor: '#243043', timeVisible: false, secondsVisible: false },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    });
+
+    const volSeries = volChart.addHistogramSeries({
+        priceFormat: { type: 'volume' },
+        priceScaleId: '',
+        scaleMargins: { top: 0.15, bottom: 0 },
+    });
+
     const stochChart = LightweightCharts.createChart(document.getElementById('stochChart'), {
         layout: { background: { color: '#0b1222' }, textColor: '#e5e7eb' },
         grid: { vertLines: { color: '#111827' }, horzLines: { color: '#111827' } },
@@ -293,16 +320,107 @@
         const container = document.getElementById('chart');
         chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
 
+        const vc = document.getElementById('volChart');
+        volChart.applyOptions({ width: vc.clientWidth, height: vc.clientHeight });
+
         const st = document.getElementById('stochChart');
         stochChart.applyOptions({ width: st.clientWidth, height: st.clientHeight });
     }
 
     window.addEventListener('resize', resizeChart);
 
-    chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+    let isSyncingTimeRange = false;
+    let pendingLogicalRange = null;
+    let pendingLogicalSource = null;
+    let syncRafId = 0;
+
+    function applyLogicalRangeSync(source, range) {
         if (!range) return;
-        stochChart.timeScale().setVisibleRange(range);
-    });
+        if (isSyncingTimeRange) return;
+        isSyncingTimeRange = true;
+        try {
+            if (source !== chart) chart.timeScale().setVisibleLogicalRange(range);
+            if (source !== volChart) volChart.timeScale().setVisibleLogicalRange(range);
+            if (source !== stochChart) stochChart.timeScale().setVisibleLogicalRange(range);
+        } finally {
+            isSyncingTimeRange = false;
+        }
+    }
+
+    function scheduleLogicalRangeSync(source, range) {
+        if (!range) return;
+        pendingLogicalRange = range;
+        pendingLogicalSource = source;
+        if (syncRafId) return;
+        syncRafId = requestAnimationFrame(() => {
+            syncRafId = 0;
+            const r = pendingLogicalRange;
+            const s = pendingLogicalSource;
+            pendingLogicalRange = null;
+            pendingLogicalSource = null;
+            applyLogicalRangeSync(s, r);
+        });
+    }
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange((range) => scheduleLogicalRangeSync(chart, range));
+    volChart.timeScale().subscribeVisibleLogicalRangeChange((range) => scheduleLogicalRangeSync(volChart, range));
+    stochChart.timeScale().subscribeVisibleLogicalRangeChange((range) => scheduleLogicalRangeSync(stochChart, range));
+
+    let lastLoadedCandles = [];
+
+    function applyIndicatorEnabledStates() {
+        const stochEnabled = elShowStoch.checked;
+        const srEnabled = elShowSr.checked;
+        elStochK.disabled = !stochEnabled;
+        elStochD.disabled = !stochEnabled;
+        elStochSmooth.disabled = !stochEnabled;
+        elSrLookback.disabled = !srEnabled;
+        elSrLevels.disabled = !srEnabled;
+    }
+
+    function clearVol() {
+        volSeries.setData([]);
+        elVolWrap.classList.add('hidden');
+    }
+
+    function renderVolFromLastCandles() {
+        if (!elShowVol.checked) {
+            clearVol();
+            return;
+        }
+
+        if (!Array.isArray(lastLoadedCandles) || lastLoadedCandles.length === 0) {
+            clearVol();
+            return;
+        }
+
+        const points = lastLoadedCandles.map(c => {
+            const t = Number(c.t);
+            const open = Number(c.o);
+            const high = Number(c.h);
+            const low = Number(c.l);
+            const close = Number(c.c);
+            const vRaw = c.v;
+            const v = (vRaw === null || vRaw === undefined || vRaw === '') ? NaN : Number(vRaw);
+            const value = Number.isFinite(v) ? v : Math.max(0, high - low);
+            const color = close >= open ? 'rgba(34,197,94,0.65)' : 'rgba(239,68,68,0.65)';
+            return {
+                time: businessDayFromUnixSeconds(t),
+                value: Number(value),
+                color,
+            };
+        }).filter(p => Number.isFinite(p.value));
+
+        if (points.length === 0) {
+            clearVol();
+            return;
+        }
+
+        elVolWrap.classList.remove('hidden');
+        volSeries.setData(points);
+        resizeChart();
+        volChart.timeScale().fitContent();
+    }
 
     async function loadSymbols() {
         const res = await fetch('/api/symbols', { headers: { 'Accept': 'application/json' } });
@@ -472,6 +590,7 @@
             }
 
             const candles = Array.isArray(payload.data) ? payload.data : [];
+            lastLoadedCandles = candles;
             const sorted = [...candles].sort((a, b) => Number(a.t) - Number(b.t));
             const seenT = new Set();
             let skipped = 0;
@@ -505,6 +624,7 @@
             }
 
             series.setData(chartData);
+            renderVolFromLastCandles();
 
             const meta = payload.meta || {};
             const count = chartData.length;
@@ -550,18 +670,29 @@
 
     elSymbol.addEventListener('change', () => loadCandles());
 
-    elShowSr.addEventListener('change', () => loadOverlays());
-    elShowStoch.addEventListener('change', () => loadOverlays());
-    elStochK.addEventListener('change', () => loadOverlays());
-    elStochD.addEventListener('change', () => loadOverlays());
-    elStochSmooth.addEventListener('change', () => loadOverlays());
-    elSrLookback.addEventListener('change', () => loadOverlays());
-    elSrLevels.addEventListener('change', () => loadOverlays());
+    elShowVol.addEventListener('change', () => renderVolFromLastCandles());
+
+    elShowSr.addEventListener('change', () => {
+        applyIndicatorEnabledStates();
+        loadOverlays();
+    });
+    elShowStoch.addEventListener('change', () => {
+        applyIndicatorEnabledStates();
+        loadOverlays();
+    });
+
+    elStochK.addEventListener('change', () => { if (elShowStoch.checked) loadOverlays(); });
+    elStochD.addEventListener('change', () => { if (elShowStoch.checked) loadOverlays(); });
+    elStochSmooth.addEventListener('change', () => { if (elShowStoch.checked) loadOverlays(); });
+    elSrLookback.addEventListener('change', () => { if (elShowSr.checked) loadOverlays(); });
+    elSrLevels.addEventListener('change', () => { if (elShowSr.checked) loadOverlays(); });
 
     (async function init() {
         resizeChart();
         applyDefaultRange();
         applyIndicatorDefaults();
+        applyIndicatorEnabledStates();
+        clearVol();
         try {
             await loadSymbols();
             loadCandles();

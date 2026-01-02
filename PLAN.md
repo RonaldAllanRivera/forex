@@ -419,6 +419,9 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 **Status**
 - Implemented `/api/overlays` endpoint (SR + Stochastic)
 - Chart renders SR horizontal lines + Stochastic in a second panel with toggles (default OFF)
+- Added optional Volume histogram panel below price (FX volume may be missing; UI uses a simple activity proxy when unavailable)
+- Indicator controls are organized in a collapsible section below the chart to reduce UI clutter
+- Zoom/pan is synchronized across price + volume + stochastic panels so timelines stay aligned
 - Tests added for overlays endpoint and indicator correctness
 
 **Acceptance criteria**

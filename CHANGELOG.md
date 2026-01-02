@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chart UI now surfaces `Last closed` date and explicitly indicates closed (EOD) candles only.
 - Chart UI indicator controls (default OFF) for SR + Stochastic, including a second Stochastic panel.
 - Monthly timeframe (MN1) support end-to-end (sync + API + chart selector).
+- Optional Volume histogram panel below price.
+- Synchronized zoom/pan across price + volume + stochastic panels.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default seeded symbols reduced to EURUSD and USDJPY.
 - Root route `/` now redirects to `/chart`.
 - Chart indicator controls are now tucked into a collapsible section below the chart to reduce UI clutter.
+- Indicator parameter inputs are disabled unless their indicator is enabled.
 - Chart candle loading filters invalid/duplicate points before calling Lightweight Charts to avoid runtime errors.
 
 ## [0.1.0] - 2025-12-28

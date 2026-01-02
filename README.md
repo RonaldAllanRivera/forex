@@ -11,6 +11,7 @@ This repository is intentionally scoped to **higher timeframes only (D1/W1/MN1)*
 - MySQL persistence with unique constraints to prevent duplicates
 - JSON API for candles and signal history
 - Blade UI + TradingView Lightweight Charts (vanilla JS)
+- Optional Volume histogram panel below price (FX volume may be missing; UI uses a simple activity proxy)
 - Stochastic Oscillator + pragmatic Support/Resistance level detection
 - Scheduler-first automation (single cron entry in production)
 - Testable integration boundaries (HTTP fakes for Alpha Vantage/OpenAI)
@@ -39,7 +40,7 @@ The app is exposed on:
 Chart UI:
 - `http://localhost/chart` (root `/` redirects to `/chart`)
 
-Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date. Indicator controls are optional and live in a collapsible section below the chart.
+Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date. Indicator controls are optional and live in a collapsible section below the chart; indicator panels stay aligned during zoom/pan.
 
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
