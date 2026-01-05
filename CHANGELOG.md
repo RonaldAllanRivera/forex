@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenAI configuration options (`OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_TIMEOUT_SECONDS`).
 - Daily email digest command (`forex:send-daily-email`) backed by `DailySignalsDigest` mailable and email view.
 - Email recipients configuration via `FOREX_EMAIL_RECIPIENTS`.
+- Scheduler wiring for the sync → signals → email pipeline (Laravel Scheduler).
+- Health/status endpoint (`GET /api/health`) reporting last sync/signals/email timestamps.
+- Optional local/testing default symbols seeding via `FOREX_SEED_DEFAULT_SYMBOLS`.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -32,7 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated candle sync/seeding and tests to use Alpha Vantage response format.
 - Improved candle sync command output to show inserted/updated/unchanged/upserted and avoid no-op upserts.
 - Widened `candles.timeframe` column to support `MN1`.
-- Default seeded symbols reduced to EURUSD and USDJPY.
 - Root route `/` now redirects to `/chart`.
 - Chart indicator controls are now tucked into a collapsible section below the chart to reduce UI clutter.
 - Indicator parameter inputs are disabled unless their indicator is enabled.

@@ -160,6 +160,9 @@ Mail:
 - Configure `MAIL_*` variables (local default is Mailpit).
 - Configure `FOREX_EMAIL_RECIPIENTS` (comma-separated) to enable `forex:send-daily-email`.
 
+Optional seeding (local/testing only):
+- Set `FOREX_SEED_DEFAULT_SYMBOLS=true` to seed a small default set of tracked pairs (via `db:seed`).
+
 Send daily email digest:
 
 ```bash
@@ -194,6 +197,18 @@ In production, configure a single cron entry to run Laravel Scheduler:
 * * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
 ```
 
+Default forex pipeline schedule (UTC):
+- D1 sync: weekdays 23:10
+- D1 AI signals: weekdays 23:30
+- Daily email digest: weekdays 23:40
+- W1 sync: Monday 23:15
+- W1 AI signals: Monday 23:35
+- MN1 sync: 1st of month 23:20
+- MN1 AI signals: 1st of month 23:37
+
+Health/status endpoint:
+- `GET /api/health` returns last sync/signals/email timestamps (stored in cache by the scheduled commands).
+
 ### Idempotency guarantees
 Candles are imported using a unique key (`symbol_id`, `timeframe`, `t`) and upsert strategy, allowing safe re-runs and overlap-window refreshes.
 
@@ -212,6 +227,7 @@ Alpha Vantage calls are protected by:
 - `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
 - `POST /api/signals/review` (local/staging/testing only)
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/health`
 
 Responses include a `meta` block with the resolved `symbol` and `timeframe`.
 

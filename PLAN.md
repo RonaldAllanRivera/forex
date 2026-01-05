@@ -504,7 +504,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ---
 
-## Phase 9 — Scheduler + Operations
+## Phase 9 — Scheduler + Operations (COMPLETED)
 - Register scheduled commands in `routes/console.php` or scheduler kernel
 - Document the single cron entry for Siteground
 - Add health/status surface:
@@ -520,7 +520,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ## Phase 10 — Hardening + Testing + Release
 - Add full test coverage for critical paths
-- Add seeders for sample symbols (EURUSD, USDJPY, etc.)
+- Add optional local/testing seeder for default tracked pairs (env-gated)
 - Add configuration docs:
   - env vars
   - symbol mapping rules

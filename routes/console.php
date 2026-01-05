@@ -2,7 +2,9 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schedule;
 use App\Enums\Timeframe;
 use App\Mail\DailySignalsDigest;
 use App\Models\Signal;
@@ -54,6 +56,16 @@ Artisan::command('forex:sync-candles {--symbol=} {--timeframe=D1} {--from=} {--t
 
     $this->info(sprintf('Done. Total upserted: %d', $total));
 
+    Cache::put(
+        sprintf('forex:last_sync:%s', $timeframe->value),
+        [
+            'at' => CarbonImmutable::now('UTC')->toISOString(),
+            'timeframe' => $timeframe->value,
+            'total_upserted' => $total,
+        ],
+        now()->addDays(30)
+    );
+
     return self::SUCCESS;
 })->purpose('Sync Forex candles from Alpha Vantage (D1/W1/MN1)');
 
@@ -91,6 +103,16 @@ Artisan::command('forex:generate-signals {--symbol=} {--timeframe=D1}', function
     }
 
     $this->info(sprintf('Done. Generated/updated: %d', $count));
+
+    Cache::put(
+        sprintf('forex:last_signals:%s', $timeframe->value),
+        [
+            'at' => CarbonImmutable::now('UTC')->toISOString(),
+            'timeframe' => $timeframe->value,
+            'generated' => $count,
+        ],
+        now()->addDays(30)
+    );
 
     return self::SUCCESS;
 })->purpose('Generate AI signals for active symbols (D1/W1/MN1)');
@@ -137,9 +159,53 @@ Artisan::command('forex:send-daily-email {--date=}', function () {
         }
     }
 
-    Mail::to($recipients)->send(new DailySignalsDigest($date, $rows));
-
-    $this->info(sprintf('Sent daily digest to %s', implode(', ', $recipients)));
+    try {
+        Mail::to($recipients)->send(new DailySignalsDigest($date, $rows));
+        Cache::put('forex:last_email', ['at' => CarbonImmutable::now('UTC')->toISOString(), 'date' => $date], now()->addDays(30));
+        Cache::forget('forex:last_email_error');
+        $this->info(sprintf('Sent daily digest to %s', implode(', ', $recipients)));
+    } catch (\Throwable $e) {
+        Cache::put('forex:last_email_error', ['at' => CarbonImmutable::now('UTC')->toISOString(), 'message' => $e->getMessage()], now()->addDays(30));
+        throw $e;
+    }
 
     return self::SUCCESS;
 })->purpose('Send daily email digest with latest signals');
+
+Schedule::command('forex:sync-candles --timeframe=D1')
+    ->weekdays()
+    ->dailyAt('23:10')
+    ->withoutOverlapping()
+    ->timezone('UTC');
+
+Schedule::command('forex:generate-signals --timeframe=D1')
+    ->weekdays()
+    ->dailyAt('23:30')
+    ->withoutOverlapping()
+    ->timezone('UTC');
+
+Schedule::command('forex:send-daily-email')
+    ->weekdays()
+    ->dailyAt('23:40')
+    ->withoutOverlapping()
+    ->timezone('UTC');
+
+Schedule::command('forex:sync-candles --timeframe=W1')
+    ->weeklyOn(1, '23:15')
+    ->withoutOverlapping()
+    ->timezone('UTC');
+
+Schedule::command('forex:generate-signals --timeframe=W1')
+    ->weeklyOn(1, '23:35')
+    ->withoutOverlapping()
+    ->timezone('UTC');
+
+Schedule::command('forex:sync-candles --timeframe=MN1')
+    ->monthlyOn(1, '23:20')
+    ->withoutOverlapping()
+    ->timezone('UTC');
+
+Schedule::command('forex:generate-signals --timeframe=MN1')
+    ->monthlyOn(1, '23:37')
+    ->withoutOverlapping()
+    ->timezone('UTC');
