@@ -42,4 +42,11 @@ return [
         'lock_ttl_seconds' => env('ALPHA_VANTAGE_LOCK_TTL_SECONDS', 300),
     ],
 
+    'openai' => [
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        'timeout_seconds' => env('OPENAI_TIMEOUT_SECONDS', 30),
+    ],
+
 ];

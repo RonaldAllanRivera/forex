@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('signals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('symbol_id')->constrained()->cascadeOnDelete();
-            $table->string('timeframe', 2);
+            $table->string('timeframe', 3);
             $table->date('as_of_date');
             $table->string('signal', 8);
             $table->unsignedTinyInteger('confidence')->nullable();

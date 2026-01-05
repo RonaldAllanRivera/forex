@@ -91,7 +91,7 @@ Your screenshots show profitable manual BUY trades on major pairs (e.g. USDJPY, 
 ### `signals`
 - `id`
 - `symbol_id`
-- `timeframe` (enum: `D1`, `W1`)
+- `timeframe` (enum: `D1`, `W1`, `MN1`)
 - `as_of_date` (date; “signal date”)
 - `signal` (enum: `BUY`, `SELL`, `WAIT`)
 - `confidence` (tinyint 0-100, optional)
@@ -450,6 +450,12 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - MN1: last ~120 candles for macro regime + long-term SR context
   - Provide SR levels + indicator summaries to the model instead of sending multi-year raw OHLC
 - Add artisan command: `forex:generate-signals`
+
+**Status**
+- Implemented `OpenAiClient` + `SignalGeneratorService`
+- Added `forex:generate-signals` artisan command
+- OpenAI config is controlled via env (`OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_TIMEOUT_SECONDS`)
+- Widened `signals.timeframe` to support `MN1` in MySQL (forward migration)
 
 **Acceptance criteria**
 - For each active symbol/timeframe, a daily signal is stored

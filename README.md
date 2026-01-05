@@ -116,6 +116,25 @@ Required integrations:
 - `ALPHA_VANTAGE_API_KEY`
 - `OPENAI_API_KEY`
 
+OpenAI options:
+- `OPENAI_MODEL` (e.g. `gpt-4o-mini`, `gpt-4o`)
+- `OPENAI_BASE_URL` (default: `https://api.openai.com/v1`)
+- `OPENAI_TIMEOUT_SECONDS`
+
+Generate AI signals:
+
+```bash
+docker compose exec -T laravel.test php artisan forex:generate-signals --timeframe=D1
+docker compose exec -T laravel.test php artisan forex:generate-signals --timeframe=W1
+docker compose exec -T laravel.test php artisan forex:generate-signals --timeframe=MN1
+```
+
+Target a single symbol:
+
+```bash
+docker compose exec -T laravel.test php artisan forex:generate-signals --symbol=EURUSD --timeframe=D1
+```
+
 API reference:
 - Alpha Vantage FX Daily/Weekly documentation: https://www.alphavantage.co/documentation/#fx-daily
 

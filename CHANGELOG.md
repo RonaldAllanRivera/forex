@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Synchronized zoom/pan across price + volume + stochastic panels.
 - Candle sync status tracking (`candle_sync_statuses`) and API endpoints to sync all timeframes from `/chart`.
 - Docker Compose `queue` service that runs `php artisan queue:work` for local development.
+- OpenAI signal generation service and command (`forex:generate-signals`) backed by `OpenAiClient` and `SignalGeneratorService`.
+- OpenAI configuration options (`OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_TIMEOUT_SECONDS`).
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Indicator parameter inputs are disabled unless their indicator is enabled.
 - Chart candle loading filters invalid/duplicate points before calling Lightweight Charts to avoid runtime errors.
 - `/chart` sync action now uses a single **Sync all timeframes** button (D1/W1/MN1) and polls status via `status-all`.
+- Widened `signals.timeframe` column to support `MN1` (forward migration for existing MySQL databases).
 
 ## [0.1.0] - 2025-12-28
 ### Added
