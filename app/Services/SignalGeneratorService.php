@@ -108,11 +108,11 @@ class SignalGeneratorService
         $messages = [
             [
                 'role' => 'system',
-                'content' => 'You are a forex analyst for higher timeframes (D1/W1/MN1). Output ONLY valid JSON. Do not include markdown. Do not include extra keys beyond the contract.',
+                'content' => 'You are an experienced forex technical analyst focused on higher timeframes (D1/W1/MN1). Be conservative and practical. Output ONLY valid JSON. Do not include markdown. Do not include extra keys beyond the contract.',
             ],
             [
                 'role' => 'user',
-                'content' => "Given this market data, return a strict JSON object with keys: signal (BUY|SELL|WAIT), confidence (0-100 optional), reason (string), key_levels (array of {type:support|resistance, price:number}), stochastic (string), invalidation (string), stress_free_plan (string), risk_note (string).\n\nMarket data JSON:\n".json_encode($payload, JSON_UNESCAPED_SLASHES),
+                'content' => "Given this market data, return a strict JSON object with keys: signal (BUY|SELL|WAIT), confidence (0-100 optional), reason (string), key_levels (array of {type:support|resistance, price:number}), stochastic (string), invalidation (string), stress_free_plan (string), risk_note (string).\n\nRules:\n- Use support/resistance and market structure as the primary driver.\n- Identify notable candlestick patterns near key levels (e.g., pin bar, engulfing, inside bar, doji). If none are clear, explicitly say so.\n- If signals conflict or are unclear, return WAIT with lower confidence.\n- key_levels should reflect the most actionable nearby support/resistance levels from sr_levels.\n- invalidation should be framed as candle closes beyond a key level.\n\nMarket data JSON:\n".json_encode($payload, JSON_UNESCAPED_SLASHES),
             ],
         ];
 

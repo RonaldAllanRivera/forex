@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON API endpoints for symbols and candles (`GET /api/symbols`, `GET /api/candles`).
 - JSON API endpoint for overlays (`GET /api/overlays`) returning SR levels and Stochastic series.
 - JSON API endpoints for signals (`GET /api/signals/latest`, `GET /api/signals`).
+- AI Review endpoint (`POST /api/signals/review`) to generate/update the latest AI signal on-demand (local/staging/testing only).
 - Lightweight Charts UI at `/chart`.
+- Chart UI AI Signal panel that renders the latest AI reading and includes an **AI Review** button (no terminal commands required).
 - Chart UI now surfaces `Last closed` date and explicitly indicates closed (EOD) candles only.
 - Chart UI indicator controls (default OFF) for SR + Stochastic, including a second Stochastic panel.
 - Monthly timeframe (MN1) support end-to-end (sync + API + chart selector).
@@ -21,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker Compose `queue` service that runs `php artisan queue:work` for local development.
 - OpenAI signal generation service and command (`forex:generate-signals`) backed by `OpenAiClient` and `SignalGeneratorService`.
 - OpenAI configuration options (`OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_TIMEOUT_SECONDS`).
+- Daily email digest command (`forex:send-daily-email`) backed by `DailySignalsDigest` mailable and email view.
+- Email recipients configuration via `FOREX_EMAIL_RECIPIENTS`.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).

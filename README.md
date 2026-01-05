@@ -44,6 +44,8 @@ Note: the chart intentionally shows **closed (EOD) candles only** (best for back
 
 In local/staging/testing, `/chart` includes a **Sync all timeframes** button that queues a background sync for **D1/W1/MN1** for the selected symbol. The UI polls status and shows per-timeframe progress.
 
+The chart also includes an **AI Review** button that generates/updates the latest AI signal for the selected symbol + timeframe and renders the result directly in the AI panel (no terminal commands required).
+
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
 
@@ -135,11 +137,34 @@ Target a single symbol:
 docker compose exec -T laravel.test php artisan forex:generate-signals --symbol=EURUSD --timeframe=D1
 ```
 
+AI Review (no terminal)
+
+On `/chart`, click **AI Review** to generate an updated signal for the currently selected symbol/timeframe.
+
+API endpoint:
+- `POST /api/signals/review` (local/staging/testing only)
+
+Example:
+
+```bash
+curl -sS -X POST "http://localhost/api/signals/review" \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"symbol":"EURUSD","timeframe":"W1"}' | jq
+```
+
 API reference:
 - Alpha Vantage FX Daily/Weekly documentation: https://www.alphavantage.co/documentation/#fx-daily
 
 Mail:
 - Configure `MAIL_*` variables (local default is Mailpit).
+- Configure `FOREX_EMAIL_RECIPIENTS` (comma-separated) to enable `forex:send-daily-email`.
+
+Send daily email digest:
+
+```bash
+docker compose exec -T laravel.test php artisan forex:send-daily-email
+```
 
 ## Architecture (high level)
 
@@ -185,6 +210,7 @@ Alpha Vantage calls are protected by:
 - `GET /api/sync-candles/status-all?symbol=EURUSD` (local/staging/testing only)
 - `GET /api/overlays?symbol=EURUSD&timeframe=D1` (SR levels + Stochastic overlays)
 - `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
+- `POST /api/signals/review` (local/staging/testing only)
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
 
 Responses include a `meta` block with the resolved `symbol` and `timeframe`.

@@ -6,10 +6,13 @@ use App\Enums\Timeframe;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SignalsIndexRequest;
 use App\Http\Requests\SignalsLatestRequest;
+use App\Http\Requests\SignalsReviewRequest;
 use App\Http\Resources\SignalResource;
 use App\Models\Signal;
 use App\Models\Symbol;
+use App\Services\SignalGeneratorService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\RateLimiter;
 
 class SignalController extends Controller
 {
@@ -79,5 +82,43 @@ class SignalController extends Controller
             ])
             ->response()
             ->header('Cache-Control', 'public, max-age=60');
+    }
+
+    public function review(SignalsReviewRequest $request, SignalGeneratorService $generator)
+    {
+        $data = $request->validated();
+
+        $symbol = Symbol::query()
+            ->where('code', $data['symbol'])
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $timeframe = Timeframe::from($data['timeframe']);
+
+        $rateKey = sprintf('signals-review:%s:%s:%s', (string) $request->ip(), $symbol->id, $timeframe->value);
+        if (RateLimiter::tooManyAttempts($rateKey, 2)) {
+            return response()->json([
+                'message' => 'Too many AI Review requests. Try again shortly.',
+            ], 429)->header('Cache-Control', 'no-store');
+        }
+        RateLimiter::hit($rateKey, 45);
+
+        try {
+            $signal = $generator->generate($symbol, $timeframe);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422)->header('Cache-Control', 'no-store');
+        }
+
+        return (new SignalResource($signal))
+            ->additional([
+                'meta' => [
+                    'symbol' => $symbol->code,
+                    'timeframe' => $timeframe->value,
+                ],
+            ])
+            ->response()
+            ->header('Cache-Control', 'no-store');
     }
 }

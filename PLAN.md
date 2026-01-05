@@ -434,7 +434,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ---
 
-## Phase 7 — OpenAI Signal Generation
+## Phase 7 — OpenAI Signal Generation (COMPLETED)
 - Implement `SignalGeneratorService`:
   - builds prompt payload from candles + stoch + SR
   - calls OpenAI
@@ -463,14 +463,44 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ---
 
-## Phase 8 — Email Notifications
+## Phase 8 — Email Notifications (COMPLETED)
 - Create Notification + Mailable view
 - Add configuration for recipients
 - Add artisan command: `forex:send-daily-email`
 
+**Status**
+- Added env-driven recipients config (`FOREX_EMAIL_RECIPIENTS`) via `config/forex.php`
+- Added `DailySignalsDigest` mailable + Blade email view
+- Added `forex:send-daily-email` artisan command
+- Tests added using `Mail::fake()`
+
 **Acceptance criteria**
 - Daily email digest sends with latest signals
 - Email sending failures are logged and retried appropriately
+
+---
+
+## Phase 8.5 — Show AI Signal on Chart UI (COMPLETED)
+- On `/chart`, display the latest stored AI signal (“BUY/SELL/WAIT”) and explanation for the selected symbol + timeframe
+- Data source: `GET /api/signals/latest?symbol=...&timeframe=...`
+- Show:
+  - signal, confidence, as-of date
+  - AI reason/commentary
+  - model used
+  - key levels (from `levels_json`)
+  - stochastic interpretation (from `stoch_json`)
+- UX:
+  - panel/card near the chart (keep it compact)
+  - refresh when symbol/timeframe changes
+  - clear “no signal yet” state with a call-to-action to click **AI Review**
+  - add an **AI Review** button that generates/updates the latest signal without requiring terminal commands
+    - `POST /api/signals/review`
+
+**Acceptance criteria**
+- Chart UI renders the latest signal panel correctly
+- Panel updates when changing symbol/timeframe
+- Reason text is readable and does not break the layout
+- Clicking **AI Review** generates a signal for the selected symbol/timeframe and refreshes the panel
 
 ---
 

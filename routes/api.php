@@ -13,4 +13,5 @@ Route::post('/sync-candles/all', [CandleSyncController::class, 'queueAll']);
 Route::get('/sync-candles/status-all', [CandleSyncController::class, 'statusAll']);
 Route::get('/overlays', [OverlayController::class, 'show']);
 Route::get('/signals/latest', [SignalController::class, 'latest']);
+Route::post('/signals/review', [SignalController::class, 'review']);
 Route::get('/signals', [SignalController::class, 'index']);

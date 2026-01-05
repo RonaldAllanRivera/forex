@@ -2,7 +2,10 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use App\Enums\Timeframe;
+use App\Mail\DailySignalsDigest;
+use App\Models\Signal;
 use App\Models\Symbol;
 use App\Services\CandleSyncService;
 use App\Services\SignalGeneratorService;
@@ -91,3 +94,52 @@ Artisan::command('forex:generate-signals {--symbol=} {--timeframe=D1}', function
 
     return self::SUCCESS;
 })->purpose('Generate AI signals for active symbols (D1/W1/MN1)');
+
+Artisan::command('forex:send-daily-email {--date=}', function () {
+    $recipientsRaw = (string) config('forex.email_recipients');
+    $recipients = array_values(array_filter(array_map('trim', preg_split('/[\s,;]+/', $recipientsRaw) ?: [])));
+
+    if (empty($recipients)) {
+        $this->warn('No email recipients configured. Set FOREX_EMAIL_RECIPIENTS (comma-separated).');
+        return self::SUCCESS;
+    }
+
+    $dateOpt = $this->option('date');
+    $date = is_string($dateOpt) && $dateOpt !== ''
+        ? CarbonImmutable::parse($dateOpt, 'UTC')->toDateString()
+        : CarbonImmutable::now('UTC')->toDateString();
+
+    $symbols = Symbol::query()->where('is_active', true)->orderBy('code')->get();
+    if ($symbols->isEmpty()) {
+        $this->warn('No active symbols found. Seed the symbols table first.');
+        return self::SUCCESS;
+    }
+
+    $timeframes = [Timeframe::D1, Timeframe::W1, Timeframe::MN1];
+    $rows = [];
+
+    foreach ($symbols as $symbol) {
+        foreach ($timeframes as $tf) {
+            $signal = Signal::query()
+                ->where('symbol_id', $symbol->id)
+                ->where('timeframe', $tf->value)
+                ->orderByDesc('as_of_date')
+                ->first();
+
+            $rows[] = [
+                'symbol' => $symbol->code,
+                'timeframe' => $tf->value,
+                'as_of_date' => $signal?->as_of_date?->format('Y-m-d'),
+                'signal' => $signal?->signal,
+                'confidence' => $signal?->confidence,
+                'reason' => $signal?->reason,
+            ];
+        }
+    }
+
+    Mail::to($recipients)->send(new DailySignalsDigest($date, $rows));
+
+    $this->info(sprintf('Sent daily digest to %s', implode(', ', $recipients)));
+
+    return self::SUCCESS;
+})->purpose('Send daily email digest with latest signals');

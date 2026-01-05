@@ -44,6 +44,9 @@
         .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid #243043; color: #9ca3af; }
         .error { color: #fca5a5; }
         .muted { color: #9ca3af; font-size: 12px; }
+        .signal-panel { border: 1px solid #243043; border-radius: 12px; background: #0b1222; padding: 12px; }
+        .signal-top { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .signal-body { margin-top: 8px; white-space: pre-wrap; line-height: 1.35; }
         .spinner { width: 12px; height: 12px; border: 2px solid #243043; border-top-color: #93c5fd; border-radius: 999px; animation: spin 0.9s linear infinite; display: inline-block; }
         .spinner.hidden { display: none; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -104,6 +107,22 @@
                 </div>
             </div>
         @endif
+
+        <div class="signal-panel" id="aiPanel">
+            <div class="signal-top">
+                <div class="status-left" style="flex-wrap: wrap;">
+                    <span id="aiBadge" class="badge">AI</span>
+                    <span id="aiSummary" class="muted">No signal loaded.</span>
+                    <span id="aiSpinner" class="spinner hidden"></span>
+                </div>
+                <div class="status-left">
+                    <div id="aiMeta" class="muted"></div>
+                    <button id="aiReviewBtn" class="secondary" type="button">AI Review</button>
+                </div>
+            </div>
+            <div id="aiReason" class="signal-body muted"></div>
+            <div id="aiDetails" class="signal-body muted"></div>
+        </div>
 
         <div id="chart"></div>
         <div id="volWrap" class="hidden">
@@ -182,6 +201,13 @@
     const elSyncBadge = document.getElementById('syncBadge');
     const elSyncText = document.getElementById('syncText');
     const elSyncSpinner = document.getElementById('syncSpinner');
+    const elAiBadge = document.getElementById('aiBadge');
+    const elAiSummary = document.getElementById('aiSummary');
+    const elAiSpinner = document.getElementById('aiSpinner');
+    const elAiMeta = document.getElementById('aiMeta');
+    const elAiReason = document.getElementById('aiReason');
+    const elAiDetails = document.getElementById('aiDetails');
+    const elAiReviewBtn = document.getElementById('aiReviewBtn');
     const elShowVol = document.getElementById('showVol');
     const elShowSr = document.getElementById('showSr');
     const elShowStoch = document.getElementById('showStoch');
@@ -197,6 +223,8 @@
 
     let syncPollTimer = 0;
     let lastSyncKey = '';
+
+    let aiReqToken = 0;
 
     function setStatus(kind, text) {
         elStatusBadge.textContent = kind;
@@ -250,6 +278,169 @@
         if (syncPollTimer) {
             window.clearInterval(syncPollTimer);
             syncPollTimer = 0;
+        }
+    }
+
+    function setAiUi(kind, summary, meta, reason, details, spinning) {
+        if (!elAiBadge || !elAiSummary) return;
+
+        elAiBadge.textContent = kind;
+        elAiBadge.style.borderColor = '#243043';
+        elAiBadge.style.color = '#9ca3af';
+
+        elAiSummary.classList.remove('error');
+        elAiSummary.textContent = summary || '';
+
+        if (elAiMeta) elAiMeta.textContent = meta || '';
+        if (elAiReason) elAiReason.textContent = reason || '';
+        if (elAiDetails) elAiDetails.textContent = details || '';
+
+        if (kind === 'BUY') {
+            elAiBadge.style.color = '#86efac';
+        }
+        if (kind === 'SELL') {
+            elAiBadge.style.color = '#fca5a5';
+        }
+        if (kind === 'WAIT') {
+            elAiBadge.style.color = '#fbbf24';
+        }
+        if (kind === 'error') {
+            elAiBadge.style.color = '#fca5a5';
+            elAiSummary.classList.add('error');
+        }
+
+        if (elAiSpinner) {
+            if (spinning) elAiSpinner.classList.remove('hidden');
+            else elAiSpinner.classList.add('hidden');
+        }
+    }
+
+    async function runAiReview() {
+        if (!elAiReviewBtn) return;
+
+        const symbol = elSymbol.value;
+        const timeframe = elTimeframe.value;
+        if (!symbol || !timeframe) return;
+
+        elAiReviewBtn.disabled = true;
+        setAiUi('loading', `Running AI Review (${symbol} ${timeframe})…`, '', '', '', true);
+
+        try {
+            const res = await fetch('/api/signals/review', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ symbol, timeframe }),
+            });
+
+            const payload = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                const msg = payload?.message || `AI Review failed (${res.status})`;
+                setAiUi('error', msg, '', '', '', false);
+                return;
+            }
+
+            const data = payload?.data || {};
+            const sig = String(data?.signal || 'WAIT');
+            const asOf = data?.as_of_date || null;
+            const conf = (data?.confidence === null || data?.confidence === undefined) ? null : Number(data?.confidence);
+            const reason = String(data?.reason || '');
+            const model = data?.model ? String(data.model) : '—';
+
+            const summaryParts = [sig];
+            if (Number.isFinite(conf)) summaryParts.push(`(${Math.round(conf)}%)`);
+            if (asOf) summaryParts.push(`as of ${asOf}`);
+
+            const levels = Array.isArray(data?.levels_json) ? data.levels_json : [];
+            const lvlText = levels
+                .map(l => {
+                    const type = l?.type ? String(l.type) : '';
+                    const price = Number(l?.price);
+                    if (!Number.isFinite(price)) return null;
+                    return `${type}:${price}`;
+                })
+                .filter(Boolean);
+
+            const stochInterp = data?.stoch_json?.interpretation ? String(data.stoch_json.interpretation) : '';
+            const details = [
+                lvlText.length ? `Key levels: ${lvlText.join(', ')}` : '',
+                stochInterp ? `Stochastic: ${stochInterp}` : '',
+            ].filter(Boolean).join('\n');
+
+            setAiUi(sig, summaryParts.join(' · '), `Model: ${model}`, reason, details, false);
+        } catch (e) {
+            setAiUi('error', e?.message ? String(e.message) : 'AI Review failed', '', '', '', false);
+        } finally {
+            elAiReviewBtn.disabled = false;
+        }
+    }
+
+    function buildLatestSignalUrl() {
+        const params = new URLSearchParams();
+        params.set('symbol', elSymbol.value);
+        params.set('timeframe', elTimeframe.value);
+        return `/api/signals/latest?${params.toString()}`;
+    }
+
+    async function refreshAiSignal() {
+        if (!elAiSummary) return;
+        const token = ++aiReqToken;
+        const symbol = elSymbol.value;
+        const timeframe = elTimeframe.value;
+        if (!symbol || !timeframe) return;
+
+        setAiUi('loading', `Loading signal (${symbol} ${timeframe})…`, '', '', '', true);
+
+        try {
+            const url = buildLatestSignalUrl();
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const payload = await res.json().catch(() => ({}));
+            if (token !== aiReqToken) return;
+
+            if (!res.ok) {
+                if (res.status === 404) {
+                    setAiUi('none', `No signal yet for ${symbol} ${timeframe}. Click AI Review.`, '', '', '', false);
+                    return;
+                }
+                const msg = payload?.message || `Signal request failed (${res.status})`;
+                setAiUi('error', msg, '', '', '', false);
+                return;
+            }
+
+            const data = payload?.data || {};
+            const sig = String(data?.signal || 'WAIT');
+            const asOf = data?.as_of_date || null;
+            const conf = (data?.confidence === null || data?.confidence === undefined) ? null : Number(data?.confidence);
+            const reason = String(data?.reason || '');
+            const model = data?.model ? String(data.model) : '—';
+
+            const summaryParts = [sig];
+            if (Number.isFinite(conf)) summaryParts.push(`(${Math.round(conf)}%)`);
+            if (asOf) summaryParts.push(`as of ${asOf}`);
+
+            const levels = Array.isArray(data?.levels_json) ? data.levels_json : [];
+            const lvlText = levels
+                .map(l => {
+                    const type = l?.type ? String(l.type) : '';
+                    const price = Number(l?.price);
+                    if (!Number.isFinite(price)) return null;
+                    return `${type}:${price}`;
+                })
+                .filter(Boolean);
+
+            const stochInterp = data?.stoch_json?.interpretation ? String(data.stoch_json.interpretation) : '';
+            const details = [
+                lvlText.length ? `Key levels: ${lvlText.join(', ')}` : '',
+                stochInterp ? `Stochastic: ${stochInterp}` : '',
+            ].filter(Boolean).join('\n');
+
+            setAiUi(sig, summaryParts.join(' · '), `Model: ${model}`, reason, details, false);
+        } catch (e) {
+            if (token !== aiReqToken) return;
+            setAiUi('error', e?.message ? String(e.message) : 'Signal load failed', '', '', '', false);
         }
     }
 
@@ -792,6 +983,8 @@
         elLoad.disabled = true;
         setStatus('loading', 'Loading candles...');
 
+        refreshAiSignal();
+
         try {
             const url = buildCandlesUrl();
             const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -916,6 +1109,10 @@
             if (elSyncAllBtn) {
                 elSyncAllBtn.addEventListener('click', () => queueSyncAll());
                 refreshSyncStatus();
+            }
+
+            if (elAiReviewBtn) {
+                elAiReviewBtn.addEventListener('click', () => runAiReview());
             }
         } catch (e) {
             setStatus('error', e?.message ? String(e.message) : 'Init failed');
