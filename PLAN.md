@@ -518,7 +518,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 ---
 
-## Phase 10 — Hardening + Testing + Release
+## Phase 10 — Hardening + Testing + Release (COMPLETED)
 - Add full test coverage for critical paths
 - Add optional local/testing seeder for default tracked pairs (env-gated)
 - Make the entire site private with Laravel session login in all environments
@@ -546,6 +546,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 
 **Status**
 - TailwindCSS migration completed for login, admin settings, and chart (shared layout + Vite assets)
+- README updated with configuration docs (env vars, symbol mapping rules) and scheduler/cron guidance
 
 ---
 

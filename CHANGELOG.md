@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - optional admin user seeding via `FOREX_SEED_ADMIN_USER`
   - admin-only password management page (`GET /admin/settings`)
 - TailwindCSS via Vite, plus a shared Blade layout.
+- Configuration documentation in README (env vars, symbol mapping rules, scheduler/cron guidance).
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).

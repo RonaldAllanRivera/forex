@@ -126,6 +126,11 @@ Required integrations:
 - `ALPHA_VANTAGE_API_KEY`
 - `OPENAI_API_KEY`
 
+Alpha Vantage options:
+- `ALPHA_VANTAGE_BASE_URL` (default: `https://www.alphavantage.co`)
+- `ALPHA_VANTAGE_CACHE_TTL_SECONDS` (response caching to reduce calls)
+- `ALPHA_VANTAGE_LOCK_TTL_SECONDS` (per-symbol/timeframe lock to prevent concurrent sync)
+
 OpenAI options:
 - `OPENAI_MODEL` (e.g. `gpt-4o-mini`, `gpt-4o`)
 - `OPENAI_BASE_URL` (default: `https://api.openai.com/v1`)
@@ -169,6 +174,21 @@ API reference:
 Mail:
 - Configure `MAIL_*` variables (local default is Mailpit).
 - Configure `FOREX_EMAIL_RECIPIENTS` (comma-separated) to enable `forex:send-daily-email`.
+
+### Symbol mapping rules
+Symbols are stored in the `symbols` table and referenced everywhere by `code`.
+
+- `symbols.code`
+  - UI/API symbol identifier (example: `EURUSD`)
+  - unique
+- `symbols.provider`
+  - currently expects `alphavantage`
+- `symbols.provider_symbol`
+  - provider-specific instrument mapping
+  - for Alpha Vantage FX, format is `FROM/TO` (example: `EUR/USD`)
+  - the sync service splits this into `from_symbol=EUR` and `to_symbol=USD`
+
+If you add new pairs, ensure `provider_symbol` is valid and `is_active=true`.
 
 Optional seeding (local/testing only):
 - Set `FOREX_SEED_DEFAULT_SYMBOLS=true` to seed a small default set of tracked pairs (via `db:seed`).
@@ -221,6 +241,8 @@ Default forex pipeline schedule (UTC):
 - W1 AI signals: Monday 23:35
 - MN1 sync: 1st of month 23:20
 - MN1 AI signals: 1st of month 23:37
+
+These defaults are defined in `routes/console.php` using `Schedule::command(...)` and can be adjusted to match your preferred market close/candle provider timing.
 
 Health/status endpoint:
 - `GET /api/health` returns last sync/signals/email timestamps (stored in cache by the scheduled commands).
