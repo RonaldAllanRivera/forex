@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `users.is_admin` flag
   - optional admin user seeding via `FOREX_SEED_ADMIN_USER`
   - admin-only password management page (`GET /admin/settings`)
+- TailwindCSS via Vite, plus a shared Blade layout.
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -56,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chart candle loading filters invalid/duplicate points before calling Lightweight Charts to avoid runtime errors.
 - `/chart` sync action now uses a single **Sync all timeframes** button (D1/W1/MN1) and polls status via `status-all`.
 - Widened `signals.timeframe` column to support `MN1` (forward migration for existing MySQL databases).
+- Migrated login, admin settings, and chart pages to TailwindCSS (incremental removal of per-page inline CSS).
+
+### Fixed
+- Stabilized chart panel sizing (chart/volume/stochastic heights) via `resources/css/app.css` to ensure consistent rendering.
 
 ## [0.1.0] - 2025-12-28
 ### Added

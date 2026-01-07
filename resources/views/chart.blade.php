@@ -1,196 +1,149 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Forex Chart</title>
-    <style>
-        :root { color-scheme: dark; }
-        body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #0b1020; color: #e5e7eb; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
-        .header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-        .title { font-size: 18px; font-weight: 600; }
-        .nav { display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
-        .field { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 12px; color: #9ca3af; }
-        select, input { background: #111827; border: 1px solid #243043; border-radius: 8px; padding: 10px 12px; color: #e5e7eb; min-width: 140px; }
-        input[type="date"] { min-width: 160px; }
-        input[type="number"] { min-width: 110px; }
-        input:disabled { opacity: .55; cursor: not-allowed; }
-        details.disclosure { border: 1px solid #243043; border-radius: 10px; background: #0b1222; padding: 8px 10px; width: 100%; }
-        details.disclosure summary { cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        details.disclosure summary::-webkit-details-marker { display: none; }
-        details.disclosure summary .summary-title { font-size: 12px; color: #e5e7eb; font-weight: 600; }
-        details.disclosure summary .summary-sub { font-size: 12px; color: #9ca3af; }
-        details.disclosure summary .chev { color: #9ca3af; font-size: 12px; }
-        details.disclosure[open] summary .chev { transform: rotate(180deg); }
-        details.disclosure .disclosure-body { margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
-        details.disclosure .disclosure-body .full { grid-column: 1 / -1; }
-        .toggle-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border: 1px solid #243043; border-radius: 8px; background: #111827; }
-        .toggle { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #e5e7eb; }
-        .toggle input { min-width: auto; width: 16px; height: 16px; padding: 0; }
-        button { background: #2563eb; border: 1px solid #1d4ed8; border-radius: 8px; padding: 10px 14px; color: white; font-weight: 600; cursor: pointer; }
-        button.secondary { background: transparent; border-color: #243043; color: #e5e7eb; }
-        button:disabled { opacity: .6; cursor: not-allowed; }
-        .grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
-        #chart { height: 560px; border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
-        #volWrap { border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
-        #volChart { height: 140px; }
-        #stochWrap { border: 1px solid #243043; border-radius: 12px; overflow: hidden; background: #0b1222; }
-        #stochChart { height: 180px; }
-        .hidden { display: none; }
-        .status { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #243043; border-radius: 12px; background: #0b1222; }
-        .status-left { display: flex; gap: 10px; align-items: center; }
-        .badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid #243043; color: #9ca3af; }
-        .error { color: #fca5a5; }
-        .muted { color: #9ca3af; font-size: 12px; }
-        .signal-panel { border: 1px solid #243043; border-radius: 12px; background: #0b1222; padding: 12px; }
-        .signal-top { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-        .signal-body { margin-top: 8px; white-space: pre-wrap; line-height: 1.35; }
-        .spinner { width: 12px; height: 12px; border: 2px solid #243043; border-top-color: #93c5fd; border-radius: 999px; animation: spin 0.9s linear infinite; display: inline-block; }
-        .spinner.hidden { display: none; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        a { color: #93c5fd; text-decoration: none; }
-        .footer { margin-top: 16px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="header">
-        <div class="title">Forex Chart (D1 / W1 / MN1)</div>
-        <div class="nav">
-            <div class="controls">
-            <div class="field">
-                <label for="symbol">Symbol</label>
-                <select id="symbol"></select>
+@extends('layouts.app')
+
+@section('title', 'Forex Chart')
+
+@section('content')
+<div class="mx-auto max-w-6xl p-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="text-lg font-semibold text-slate-100">Forex Chart (D1 / W1 / MN1)</div>
+
+        <div class="flex flex-wrap items-end justify-end gap-2">
+            <div class="flex flex-col gap-1.5">
+                <label for="symbol" class="text-xs text-slate-400">Symbol</label>
+                <select id="symbol" class="min-w-[140px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"></select>
             </div>
-            <div class="field">
-                <label for="timeframe">Timeframe</label>
-                <select id="timeframe">
+
+            <div class="flex flex-col gap-1.5">
+                <label for="timeframe" class="text-xs text-slate-400">Timeframe</label>
+                <select id="timeframe" class="min-w-[140px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                     <option value="D1">D1</option>
                     <option value="W1">W1</option>
                     <option value="MN1">MN1</option>
                 </select>
             </div>
-            <div class="field">
-                <label for="from">From (optional)</label>
-                <input id="from" type="date" />
+
+            <div class="flex flex-col gap-1.5">
+                <label for="from" class="text-xs text-slate-400">From (optional)</label>
+                <input id="from" type="date" class="min-w-[160px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
             </div>
-            <div class="field">
-                <label for="to">To (optional)</label>
-                <input id="to" type="date" />
+
+            <div class="flex flex-col gap-1.5">
+                <label for="to" class="text-xs text-slate-400">To (optional)</label>
+                <input id="to" type="date" class="min-w-[160px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
             </div>
-            <button id="load">Load</button>
-            <button id="reset" class="secondary">Reset range</button>
-            </div>
+
+            <button id="load" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">Load</button>
+            <button id="reset" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/30">Reset range</button>
         </div>
     </div>
 
-    <div class="grid">
-        <div class="status">
-            <div class="status-left">
-                <span id="statusBadge" class="badge">idle</span>
-                <span id="statusText" class="muted">Ready.</span>
+    <div class="mt-4 grid grid-cols-1 gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <span id="statusBadge" class="inline-flex items-center rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">idle</span>
+                <span id="statusText" class="text-xs text-slate-400">Ready.</span>
             </div>
-            <div class="muted">
-                Closed candles only (EOD) · <span id="lastClosed">Last closed: —</span> · Data source: local DB via <code>/api/candles</code>
-            </div>
-        </div>
-
-        <div class="status" id="syncStatusBar">
-            <div class="status-left">
-                <span class="badge" id="syncBadge">sync</span>
-                <span class="muted" id="syncText">Sync all timeframes (D1/W1/MN1) from Alpha Vantage.</span>
-                <span id="syncSpinner" class="spinner hidden"></span>
-            </div>
-            <div class="status-left">
-                <button id="syncAllBtn" class="secondary" type="button">Sync all timeframes</button>
+            <div class="text-xs text-slate-400">
+                Closed candles only (EOD) · <span id="lastClosed">Last closed: —</span> · Data source: local DB via <code class="rounded bg-slate-950 px-1 py-0.5 text-[11px] text-slate-200">/api/candles</code>
             </div>
         </div>
 
-        <div class="signal-panel" id="aiPanel">
-            <div class="signal-top">
-                <div class="status-left" style="flex-wrap: wrap;">
-                    <span id="aiBadge" class="badge">AI</span>
-                    <span id="aiSummary" class="muted">No signal loaded.</span>
-                    <span id="aiSpinner" class="spinner hidden"></span>
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2" id="syncStatusBar">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400" id="syncBadge">sync</span>
+                <span class="text-xs text-slate-400" id="syncText">Sync all timeframes (D1/W1/MN1) from Alpha Vantage.</span>
+                <span id="syncSpinner" class="hidden h-3 w-3 animate-spin rounded-full border-2 border-slate-700 border-t-blue-300"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="syncAllBtn" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/30" type="button">Sync all timeframes</button>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-3" id="aiPanel">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span id="aiBadge" class="inline-flex items-center rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">AI</span>
+                    <span id="aiSummary" class="text-xs text-slate-400">No signal loaded.</span>
+                    <span id="aiSpinner" class="hidden h-3 w-3 animate-spin rounded-full border-2 border-slate-700 border-t-blue-300"></span>
                 </div>
-                <div class="status-left">
-                    <div id="aiMeta" class="muted"></div>
-                    <button id="aiReviewBtn" class="secondary" type="button">AI Review</button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div id="aiMeta" class="text-xs text-slate-400"></div>
+                    <button id="aiReviewBtn" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/30" type="button">AI Review</button>
                 </div>
             </div>
-            <div class="muted" style="margin-top: 6px;">
+            <div class="mt-2 text-xs text-slate-400">
                 AI Review runs per selected timeframe (D1/W1/MN1) using candles + support/resistance + stochastic. Different timeframes can look similar.
             </div>
-            <div id="aiReason" class="signal-body muted"></div>
-            <div id="aiDetails" class="signal-body muted"></div>
+            <div id="aiReason" class="mt-2 whitespace-pre-wrap text-sm leading-snug text-slate-300"></div>
+            <div id="aiDetails" class="mt-2 whitespace-pre-wrap text-sm leading-snug text-slate-300"></div>
         </div>
 
-        <div id="chart"></div>
-        <div id="volWrap" class="hidden">
-            <div id="volChart"></div>
+        <div id="chart" class="h-[560px] overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60"></div>
+        <div id="volWrap" class="hidden overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60">
+            <div id="volChart" class="h-[140px]"></div>
         </div>
-        <div id="stochWrap" class="hidden">
-            <div id="stochChart"></div>
+        <div id="stochWrap" class="hidden overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60">
+            <div id="stochChart" class="h-[180px]"></div>
         </div>
     </div>
 
-    <div style="margin-top: 12px;">
-        <details class="disclosure">
-            <summary>
-                <div>
-                    <div class="summary-title">Indicators</div>
-                    <div class="summary-sub">Optional (default off)</div>
+    <div class="mt-3">
+        <details class="group rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
+            <summary class="cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-semibold text-slate-100">Indicators</div>
+                        <div class="text-xs text-slate-400">Optional (default off)</div>
+                    </div>
+                    <div class="text-xs text-slate-400 transition group-open:rotate-180">▼</div>
                 </div>
-                <div class="chev">▼</div>
             </summary>
-            <div class="disclosure-body">
-                <div class="field full">
-                    <label>Enable</label>
-                    <div class="toggle-row">
-                        <label class="toggle"><input id="showVol" type="checkbox" />Volume</label>
-                        <label class="toggle"><input id="showSr" type="checkbox" />SR</label>
-                        <label class="toggle"><input id="showStoch" type="checkbox" />Stoch</label>
+            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 md:items-end">
+                <div class="md:col-span-2">
+                    <label class="block text-xs text-slate-400">Enable</label>
+                    <div class="mt-2 flex flex-wrap items-center gap-4 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-200"><input id="showVol" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/30" />Volume</label>
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-200"><input id="showSr" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/30" />SR</label>
+                        <label class="inline-flex items-center gap-2 text-xs text-slate-200"><input id="showStoch" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/30" />Stoch</label>
                     </div>
                 </div>
-                <div class="field full">
-                    <label>Notes</label>
-                    <div class="muted">FX volume is often unavailable. When provider volume is missing, the chart shows a simple activity proxy (range).</div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs text-slate-400">Notes</label>
+                    <div class="mt-2 text-xs text-slate-400">FX volume is often unavailable. When provider volume is missing, the chart shows a simple activity proxy (range).</div>
                 </div>
-                <div class="field">
-                    <label for="stochK">Stoch K</label>
-                    <input id="stochK" type="number" min="2" max="100" step="1" />
+
+                <div>
+                    <label for="stochK" class="block text-xs text-slate-400">Stoch K</label>
+                    <input id="stochK" type="number" min="2" max="100" step="1" class="mt-2 block w-full min-w-[110px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
-                <div class="field">
-                    <label for="stochD">Stoch D</label>
-                    <input id="stochD" type="number" min="1" max="50" step="1" />
+                <div>
+                    <label for="stochD" class="block text-xs text-slate-400">Stoch D</label>
+                    <input id="stochD" type="number" min="1" max="50" step="1" class="mt-2 block w-full min-w-[110px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
-                <div class="field">
-                    <label for="stochSmooth">Stoch Smooth</label>
-                    <input id="stochSmooth" type="number" min="1" max="50" step="1" />
+                <div>
+                    <label for="stochSmooth" class="block text-xs text-slate-400">Stoch Smooth</label>
+                    <input id="stochSmooth" type="number" min="1" max="50" step="1" class="mt-2 block w-full min-w-[110px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
-                <div class="field">
-                    <label for="srLookback">SR Lookback</label>
-                    <input id="srLookback" type="number" min="50" max="2000" step="1" />
+                <div>
+                    <label for="srLookback" class="block text-xs text-slate-400">SR Lookback</label>
+                    <input id="srLookback" type="number" min="50" max="2000" step="1" class="mt-2 block w-full min-w-[110px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
-                <div class="field">
-                    <label for="srLevels">SR Levels</label>
-                    <input id="srLevels" type="number" min="1" max="50" step="1" />
+                <div>
+                    <label for="srLevels" class="block text-xs text-slate-400">SR Levels</label>
+                    <input id="srLevels" type="number" min="1" max="50" step="1" class="mt-2 block w-full min-w-[110px] rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
             </div>
         </details>
     </div>
 
-    <div class="footer muted">
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
         <div>Defaults: D1 = last 2 years, W1 = last 5 years, MN1 = last 15 years</div>
         <div>
-            <a href="/">Home</a>
+            <a href="/" class="text-slate-300 hover:text-white">Home</a>
             @if(auth()->user()?->is_admin)
-                <span> · </span>
-                <a href="{{ route('admin.settings') }}">Admin Settings</a>
+                <span class="px-1">·</span>
+                <a href="{{ route('admin.settings') }}" class="text-slate-300 hover:text-white">Admin Settings</a>
             @endif
         </div>
     </div>
@@ -242,7 +195,7 @@
         elStatusBadge.textContent = kind;
         elStatusBadge.style.borderColor = '#243043';
         elStatusBadge.style.color = '#9ca3af';
-        elStatusText.classList.remove('error');
+        elStatusText.classList.remove('text-red-300');
         elStatusText.textContent = text;
 
         if (kind === 'loading') {
@@ -251,7 +204,7 @@
 
         if (kind === 'error') {
             elStatusBadge.style.color = '#fca5a5';
-            elStatusText.classList.add('error');
+            elStatusText.classList.add('text-red-300');
         }
 
         if (kind === 'ok') {
@@ -265,7 +218,7 @@
         elSyncBadge.textContent = kind;
         elSyncBadge.style.borderColor = '#243043';
         elSyncBadge.style.color = '#9ca3af';
-        elSyncText.classList.remove('error');
+        elSyncText.classList.remove('text-red-300');
         elSyncText.textContent = text;
 
         if (kind === 'queued' || kind === 'running') {
@@ -273,7 +226,7 @@
         }
         if (kind === 'failed') {
             elSyncBadge.style.color = '#fca5a5';
-            elSyncText.classList.add('error');
+            elSyncText.classList.add('text-red-300');
         }
         if (kind === 'succeeded') {
             elSyncBadge.style.color = '#86efac';
@@ -300,7 +253,7 @@
         elAiBadge.style.borderColor = '#243043';
         elAiBadge.style.color = '#9ca3af';
 
-        elAiSummary.classList.remove('error');
+        elAiSummary.classList.remove('text-red-300');
         elAiSummary.textContent = summary || '';
 
         if (elAiMeta) elAiMeta.textContent = meta || '';
@@ -318,7 +271,7 @@
         }
         if (kind === 'error') {
             elAiBadge.style.color = '#fca5a5';
-            elAiSummary.classList.add('error');
+            elAiSummary.classList.add('text-red-300');
         }
 
         if (elAiSpinner) {
@@ -1115,6 +1068,7 @@
 
     (async function init() {
         resizeChart();
+        requestAnimationFrame(() => resizeChart());
         applyDefaultRange();
         applyIndicatorDefaults();
         applyIndicatorEnabledStates();
@@ -1135,5 +1089,5 @@
         }
     })();
 </script>
-</body>
-</html>
+
+@endsection

@@ -9,3 +9,27 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+#chart {
+    height: 560px;
+    border: 1px solid #243043;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0b1222;
+}
+
+#volWrap,
+#stochWrap {
+    border: 1px solid #243043;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0b1222;
+}
+
+#volChart {
+    height: 140px;
+}
+
+#stochChart {
+    height: 180px;
+}

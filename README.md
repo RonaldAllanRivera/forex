@@ -1,16 +1,19 @@
 # Forex Signals — Laravel 12
 
-Production-minded Laravel 12 application for **D1/W1/MN1 Forex market analysis**.
+Production-minded **Laravel 12** application that showcases end-to-end delivery: secure authentication, resilient data ingestion, background job orchestration, testable service boundaries, and a responsive UI.
 
-The system ingests **daily/weekly/monthly candlestick data** from Alpha Vantage, stores it with **idempotent imports**, exposes a clean **JSON API**, and renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** (Blade + vanilla JS). It also produces a **daily signal** (BUY/SELL/WAIT) with a structured explanation and sends a notification email.
+The system targets **D1/W1/MN1 Forex market analysis**. It ingests **daily/weekly/monthly candlestick data** from Alpha Vantage, persists it with **idempotent upserts**, exposes a clean **JSON API**, and renders an **MT4-like candlestick chart** using **TradingView Lightweight Charts** (Blade + vanilla JS). It also generates an AI-assisted **BUY/SELL/WAIT** signal with structured reasoning and sends a daily digest email.
 
-This repository is intentionally scoped to **higher timeframes only (D1/W1/MN1)** to keep decision-making consistent and low-noise.
+Scope is intentionally constrained to **higher timeframes (D1/W1/MN1)** to reduce noise and keep decision-making consistent.
 
 ## Highlights
-- Alpha Vantage candles ingestion (D1/W1/MN1) with retries, backoff, and idempotency
+- Secure-by-default: **site-wide session auth** for web + `/api/*` routes, CSRF-protected POST API endpoints
+- Minimal admin bootstrap (`users.is_admin`) with an admin-only password settings page
+- Alpha Vantage candles ingestion (D1/W1/MN1) with retries, backoff, and idempotent imports
 - MySQL persistence with unique constraints to prevent duplicates
-- JSON API for candles and signal history
+- JSON API for candles, overlays, and signal history
 - Blade UI + TradingView Lightweight Charts (vanilla JS)
+- TailwindCSS via Vite + shared layout (incremental migration away from per-page inline CSS)
 - Optional Volume histogram panel below price (FX volume may be missing; UI uses a simple activity proxy)
 - Stochastic Oscillator + pragmatic Support/Resistance level detection
 - Scheduler-first automation (single cron entry in production)
@@ -21,6 +24,7 @@ This repository is intentionally scoped to **higher timeframes only (D1/W1/MN1)*
 - Laravel 12
 - MySQL 8
 - Blade + vanilla JavaScript
+- TailwindCSS + Vite
 - Docker Compose (local dev)
 
 ## Local Development (Docker Compose)

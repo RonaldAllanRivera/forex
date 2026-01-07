@@ -528,6 +528,12 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - `users.is_admin` flag
   - env-gated admin seeding for first login (`FOREX_SEED_ADMIN_USER`)
   - admin-only `/admin/settings` page for changing password
+- Optional: TailwindCSS UI cleanup
+  - Add TailwindCSS build pipeline (Vite) and move shared styles into `resources/css/app.css`
+  - Introduce a shared Blade layout (and Blade components where helpful) to eliminate per-page `<style>` blocks
+  - Migrate pages incrementally: login → admin settings → chart
+  - Remove duplicated inline CSS only after each page is migrated
+  - Note: chart panel heights are stabilized via `resources/css/app.css` (ensures consistent rendering regardless of Tailwind class generation)
 - Add configuration docs:
   - env vars
   - symbol mapping rules
@@ -537,6 +543,9 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - Test suite passes
 - A fresh deploy can be configured via env only
 - Imports are idempotent and resilient to API hiccups
+
+**Status**
+- TailwindCSS migration completed for login, admin settings, and chart (shared layout + Vite assets)
 
 ---
 
