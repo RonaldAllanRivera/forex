@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Forex Chart</title>
     <style>
         :root { color-scheme: dark; }
@@ -10,6 +11,7 @@
         .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
         .header { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
         .title { font-size: 18px; font-weight: 600; }
+        .nav { display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
         .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
         .field { display: flex; flex-direction: column; gap: 6px; }
         label { font-size: 12px; color: #9ca3af; }
@@ -58,7 +60,8 @@
 <div class="container">
     <div class="header">
         <div class="title">Forex Chart (D1 / W1 / MN1)</div>
-        <div class="controls">
+        <div class="nav">
+            <div class="controls">
             <div class="field">
                 <label for="symbol">Symbol</label>
                 <select id="symbol"></select>
@@ -81,6 +84,7 @@
             </div>
             <button id="load">Load</button>
             <button id="reset" class="secondary">Reset range</button>
+            </div>
         </div>
     </div>
 
@@ -95,18 +99,16 @@
             </div>
         </div>
 
-        @if(app()->environment(['local', 'staging', 'testing']))
-            <div class="status" id="syncStatusBar">
-                <div class="status-left">
-                    <span class="badge" id="syncBadge">sync</span>
-                    <span class="muted" id="syncText">Sync all timeframes (D1/W1/MN1) from Alpha Vantage is available in local/staging.</span>
-                    <span id="syncSpinner" class="spinner hidden"></span>
-                </div>
-                <div class="status-left">
-                    <button id="syncAllBtn" class="secondary" type="button">Sync all timeframes</button>
-                </div>
+        <div class="status" id="syncStatusBar">
+            <div class="status-left">
+                <span class="badge" id="syncBadge">sync</span>
+                <span class="muted" id="syncText">Sync all timeframes (D1/W1/MN1) from Alpha Vantage.</span>
+                <span id="syncSpinner" class="spinner hidden"></span>
             </div>
-        @endif
+            <div class="status-left">
+                <button id="syncAllBtn" class="secondary" type="button">Sync all timeframes</button>
+            </div>
+        </div>
 
         <div class="signal-panel" id="aiPanel">
             <div class="signal-top">
@@ -119,6 +121,9 @@
                     <div id="aiMeta" class="muted"></div>
                     <button id="aiReviewBtn" class="secondary" type="button">AI Review</button>
                 </div>
+            </div>
+            <div class="muted" style="margin-top: 6px;">
+                AI Review runs per selected timeframe (D1/W1/MN1) using candles + support/resistance + stochastic. Different timeframes can look similar.
             </div>
             <div id="aiReason" class="signal-body muted"></div>
             <div id="aiDetails" class="signal-body muted"></div>
@@ -181,12 +186,19 @@
 
     <div class="footer muted">
         <div>Defaults: D1 = last 2 years, W1 = last 5 years, MN1 = last 15 years</div>
-        <div><a href="/">Home</a></div>
+        <div>
+            <a href="/">Home</a>
+            @if(auth()->user()?->is_admin)
+                <span> · </span>
+                <a href="{{ route('admin.settings') }}">Admin Settings</a>
+            @endif
+        </div>
     </div>
 </div>
 
 <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
 <script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const elSymbol = document.getElementById('symbol');
     const elTimeframe = document.getElementById('timeframe');
     const elFrom = document.getElementById('from');
@@ -328,9 +340,11 @@
         try {
             const res = await fetch('/api/signals/review', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify({ symbol, timeframe }),
             });
@@ -576,11 +590,13 @@
         try {
             const res = await fetch('/api/sync-candles/all', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
                 },
-                body: JSON.stringify({ symbol, from, to }),
+                body: JSON.stringify({ symbol }),
             });
             const payload = await res.json().catch(() => ({}));
             if (!res.ok) {

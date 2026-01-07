@@ -12,6 +12,8 @@ class ApiSymbolsTest extends TestCase
 
     public function test_it_lists_active_symbols(): void
     {
+        $this->signIn();
+
         Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',

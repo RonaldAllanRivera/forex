@@ -521,6 +521,13 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 ## Phase 10 — Hardening + Testing + Release
 - Add full test coverage for critical paths
 - Add optional local/testing seeder for default tracked pairs (env-gated)
+- Make the entire site private with Laravel session login in all environments
+  - Protect all web routes and `/api/*` routes with `auth`
+  - Ensure POST requests to `/api/*` include CSRF token (API routes use `web` middleware)
+- Add minimal admin bootstrap
+  - `users.is_admin` flag
+  - env-gated admin seeding for first login (`FOREX_SEED_ADMIN_USER`)
+  - admin-only `/admin/settings` page for changing password
 - Add configuration docs:
   - env vars
   - symbol mapping rules
@@ -530,3 +537,25 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - Test suite passes
 - A fresh deploy can be configured via env only
 - Imports are idempotent and resilient to API hiccups
+
+---
+
+## Phase 11 — Trade Management: Current Trade AI Review
+- Add a DB-backed trade review feature for already-opened BUY/SELL trades
+- UI: on `/chart`, add a **Current Trade AI Review** section
+  - inputs: side (BUY/SELL), entry price, stop loss, optional take profit, optional opened-at date/time, optional notes
+  - output: AI guidance to continue vs close/exit, stop placement quality, key levels, invalidation, and a simple management plan
+- API:
+  - `POST /api/trades/review` (creates a saved Trade + AI review snapshot)
+  - `GET /api/trades` (list recent trade reviews)
+  - `GET /api/trades/{id}` (view one review)
+- Security/ops:
+  - all endpoints require session auth; POST endpoints require CSRF token
+  - keep rate limiting to protect API usage and cost
+- Notes:
+  - position size is intentionally not required (AI reviews trade quality/structure, not money management)
+
+**Acceptance criteria**
+- Admin can submit a current trade (BUY/SELL) with entry + stop (and optional TP) and receive a structured review
+- Each trade review is persisted to the DB and can be retrieved via API
+- All endpoints require session auth; POST endpoints require CSRF token

@@ -38,11 +38,15 @@ The app is exposed on:
 - `http://localhost` (port `80` by default)
 
 Chart UI:
-- `http://localhost/chart` (root `/` redirects to `/chart`)
+- `http://localhost/chart` (guests are redirected to `/login`)
+
+Authentication:
+- All web routes and `/api/*` routes require a logged-in user (Laravel session auth).
+- POST requests to `/api/*` use the `web` middleware group and require a valid CSRF token.
 
 Note: the chart intentionally shows **closed (EOD) candles only** (best for backtesting/AI consistency). The UI surfaces a `Last closed` date. Indicator controls are optional and live in a collapsible section below the chart; indicator panels stay aligned during zoom/pan.
 
-In local/staging/testing, `/chart` includes a **Sync all timeframes** button that queues a background sync for **D1/W1/MN1** for the selected symbol. The UI polls status and shows per-timeframe progress.
+On `/chart`, the **Sync all timeframes** button queues a background sync for **D1/W1/MN1** for the selected symbol. The UI polls status and shows per-timeframe progress.
 
 The chart also includes an **AI Review** button that generates/updates the latest AI signal for the selected symbol + timeframe and renders the result directly in the AI panel (no terminal commands required).
 
@@ -141,8 +145,10 @@ AI Review (no terminal)
 
 On `/chart`, click **AI Review** to generate an updated signal for the currently selected symbol/timeframe.
 
+Note: AI Review runs per timeframe (D1/W1/MN1). It uses candle OHLC (including candlestick patterns), support/resistance levels, and stochastic context. Different timeframes can produce similar-looking outputs because the same analysis rubric is applied per timeframe.
+
 API endpoint:
-- `POST /api/signals/review` (local/staging/testing only)
+- `POST /api/signals/review` (requires session auth + CSRF)
 
 Example:
 
@@ -162,6 +168,12 @@ Mail:
 
 Optional seeding (local/testing only):
 - Set `FOREX_SEED_DEFAULT_SYMBOLS=true` to seed a small default set of tracked pairs (via `db:seed`).
+- Set `FOREX_SEED_ADMIN_USER=true` to seed the initial admin user (via `db:seed`).
+
+Admin settings:
+- Visit `GET /admin/settings` to change the admin password (admin-only).
+- The chart footer shows an **Admin Settings** link for admin users.
+- If you enabled `FOREX_SEED_ADMIN_USER`, change the seeded password immediately.
 
 Send daily email digest:
 
@@ -221,11 +233,11 @@ Alpha Vantage calls are protected by:
 
 - `GET /api/symbols`
 - `GET /api/candles?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `POST /api/sync-candles/all` (local/staging/testing only)
-- `GET /api/sync-candles/status-all?symbol=EURUSD` (local/staging/testing only)
+- `POST /api/sync-candles/all` (requires session auth + CSRF)
+- `GET /api/sync-candles/status-all?symbol=EURUSD`
 - `GET /api/overlays?symbol=EURUSD&timeframe=D1` (SR levels + Stochastic overlays)
 - `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
-- `POST /api/signals/review` (local/staging/testing only)
+- `POST /api/signals/review` (requires session auth + CSRF)
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `GET /api/health`
 

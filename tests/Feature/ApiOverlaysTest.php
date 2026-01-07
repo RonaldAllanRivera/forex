@@ -14,6 +14,8 @@ class ApiOverlaysTest extends TestCase
 
     public function test_it_validates_required_params(): void
     {
+        $this->signIn();
+
         $response = $this->getJson('/api/overlays');
 
         $response->assertStatus(422);
@@ -22,6 +24,8 @@ class ApiOverlaysTest extends TestCase
 
     public function test_it_returns_stochastic_and_sr_levels(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',
@@ -127,6 +131,8 @@ class ApiOverlaysTest extends TestCase
 
     public function test_it_returns_mn1_default_overlay_params(): void
     {
+        $this->signIn();
+
         Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',

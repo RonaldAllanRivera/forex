@@ -16,6 +16,8 @@ class ApiCandleSyncTest extends TestCase
 
     public function test_it_returns_all_timeframe_statuses_defaulting_to_idle(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',
@@ -41,6 +43,8 @@ class ApiCandleSyncTest extends TestCase
 
     public function test_it_queues_all_timeframes(): void
     {
+        $this->signIn();
+
         Queue::fake();
 
         $symbol = Symbol::query()->create([
@@ -50,7 +54,7 @@ class ApiCandleSyncTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->postJson('/api/sync-candles/all', [
+        $response = $this->withCsrfToken()->postJson('/api/sync-candles/all', [
             'symbol' => 'EURUSD',
         ]);
 
@@ -80,6 +84,8 @@ class ApiCandleSyncTest extends TestCase
 
     public function test_it_returns_all_timeframe_statuses(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',

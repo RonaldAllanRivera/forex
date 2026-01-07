@@ -14,6 +14,8 @@ class ApiCandlesTest extends TestCase
 
     public function test_it_returns_candles_for_symbol_and_timeframe_ordered_by_time(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',
@@ -55,6 +57,8 @@ class ApiCandlesTest extends TestCase
 
     public function test_it_validates_required_params(): void
     {
+        $this->signIn();
+
         $response = $this->getJson('/api/candles');
 
         $response->assertStatus(422);
@@ -63,6 +67,8 @@ class ApiCandlesTest extends TestCase
 
     public function test_it_filters_by_from_and_to_dates(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',
@@ -101,6 +107,8 @@ class ApiCandlesTest extends TestCase
 
     public function test_it_accepts_mn1_timeframe(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',

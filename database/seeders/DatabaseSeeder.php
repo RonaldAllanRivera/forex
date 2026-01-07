@@ -18,13 +18,23 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        if ((bool) config('forex.seed_admin_user')) {
+            $this->call(AdminUserSeeder::class);
+        }
+
         if ((bool) config('forex.seed_default_symbols') && App::environment(['local', 'testing'])) {
             $this->call(SymbolSeeder::class);
         }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (App::environment(['local', 'testing'])) {
+            User::query()->firstOrCreate(
+                ['email' => 'test@example.com'],
+                [
+                    'name' => 'Test User',
+                    'password' => 'password',
+                    'is_admin' => false,
+                ]
+            );
+        }
     }
 }

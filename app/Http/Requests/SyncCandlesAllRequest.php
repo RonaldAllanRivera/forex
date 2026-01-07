@@ -9,7 +9,7 @@ class SyncCandlesAllRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return app()->environment(['local', 'staging', 'testing']);
+        return $this->user() !== null;
     }
 
     public function rules(): array

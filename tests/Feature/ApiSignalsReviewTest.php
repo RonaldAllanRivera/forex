@@ -16,7 +16,9 @@ class ApiSignalsReviewTest extends TestCase
 
     public function test_it_validates_required_params_for_review(): void
     {
-        $response = $this->postJson('/api/signals/review');
+        $this->signIn();
+
+        $response = $this->withCsrfToken()->postJson('/api/signals/review');
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['symbol', 'timeframe']);
@@ -24,6 +26,8 @@ class ApiSignalsReviewTest extends TestCase
 
     public function test_it_generates_signal_and_returns_resource(): void
     {
+        $this->signIn();
+
         config([
             'services.openai.base_url' => 'https://api.openai.com/v1',
             'services.openai.key' => 'test-openai-key',
@@ -76,7 +80,7 @@ class ApiSignalsReviewTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->postJson('/api/signals/review', [
+        $response = $this->withCsrfToken()->postJson('/api/signals/review', [
             'symbol' => 'EURUSD',
             'timeframe' => 'W1',
         ]);

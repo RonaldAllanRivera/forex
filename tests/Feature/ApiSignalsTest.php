@@ -14,6 +14,8 @@ class ApiSignalsTest extends TestCase
 
     public function test_it_validates_required_params_for_latest(): void
     {
+        $this->signIn();
+
         $response = $this->getJson('/api/signals/latest');
 
         $response->assertStatus(422);
@@ -22,6 +24,8 @@ class ApiSignalsTest extends TestCase
 
     public function test_it_returns_latest_signal(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',
@@ -58,6 +62,8 @@ class ApiSignalsTest extends TestCase
 
     public function test_it_returns_signal_history_filtered_by_dates(): void
     {
+        $this->signIn();
+
         $symbol = Symbol::query()->create([
             'code' => 'EURUSD',
             'provider' => 'alphavantage',

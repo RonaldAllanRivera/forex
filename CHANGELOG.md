@@ -8,10 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [0.2.0] - 2026-01-07
+
+### Added
 - JSON API endpoints for symbols and candles (`GET /api/symbols`, `GET /api/candles`).
 - JSON API endpoint for overlays (`GET /api/overlays`) returning SR levels and Stochastic series.
 - JSON API endpoints for signals (`GET /api/signals/latest`, `GET /api/signals`).
-- AI Review endpoint (`POST /api/signals/review`) to generate/update the latest AI signal on-demand (local/staging/testing only).
+- AI Review endpoint (`POST /api/signals/review`) to generate/update the latest AI signal on-demand (requires session auth + CSRF).
 - Lightweight Charts UI at `/chart`.
 - Chart UI AI Signal panel that renders the latest AI reading and includes an **AI Review** button (no terminal commands required).
 - Chart UI now surfaces `Last closed` date and explicitly indicates closed (EOD) candles only.
@@ -28,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scheduler wiring for the sync → signals → email pipeline (Laravel Scheduler).
 - Health/status endpoint (`GET /api/health`) reporting last sync/signals/email timestamps.
 - Optional local/testing default symbols seeding via `FOREX_SEED_DEFAULT_SYMBOLS`.
+- Minimal session-based authentication (login/logout) protecting all web and API routes.
+- Admin bootstrap:
+  - `users.is_admin` flag
+  - optional admin user seeding via `FOREX_SEED_ADMIN_USER`
+  - admin-only password management page (`GET /admin/settings`)
 
 ### Changed
 - Switched candle ingestion provider from Finnhub to Alpha Vantage (FX_DAILY/FX_WEEKLY).
@@ -36,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved candle sync command output to show inserted/updated/unchanged/upserted and avoid no-op upserts.
 - Widened `candles.timeframe` column to support `MN1`.
 - Root route `/` now redirects to `/chart`.
+- Guests are redirected to `/login` (site-wide auth).
+- API routes now run under `web` middleware and require session auth; POST endpoints require CSRF.
 - Chart indicator controls are now tucked into a collapsible section below the chart to reduce UI clutter.
 - Indicator parameter inputs are disabled unless their indicator is enabled.
 - Chart candle loading filters invalid/duplicate points before calling Lightweight Charts to avoid runtime errors.
