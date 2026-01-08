@@ -548,9 +548,10 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - TailwindCSS migration completed for login, admin settings, and chart (shared layout + Vite assets)
 - README updated with configuration docs (env vars, symbol mapping rules) and scheduler/cron guidance
 
+
 ---
 
-## Phase 11 — Trade Management: Current Trade AI Review
+## Phase 11 — Trade Management: Current Trade AI Review (COMPLETED)
 - Add a DB-backed trade review feature for already-opened BUY/SELL trades
 - UI: on `/chart`, add a **Current Trade AI Review** section
   - inputs: side (BUY/SELL), entry price, stop loss, optional take profit, optional opened-at date/time, optional notes
@@ -564,8 +565,36 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - keep rate limiting to protect API usage and cost
 - Notes:
   - position size is intentionally not required (AI reviews trade quality/structure, not money management)
+  - AI trade reviews use a dedicated prompt/JSON contract (separate from signals)
+  - Persist model + prompt hash + raw response JSON for audit/debug; avoid storing the full prompt text unless explicitly needed
+  - When pulling Phase 11 changes into a running environment, run DB migrations so `trades` / `trade_reviews` tables exist
+
+**Status**
+- Added `trades` + `trade_reviews` tables and Eloquent models.
+- Implemented `TradeReviewGeneratorService` (candles + SR + stoch + OpenAI) and persisted review snapshots.
+- Implemented admin-only API routes for trade review creation + listing.
+- Added feature tests for the new trade review API endpoints.
+- Added `/chart` UI panel for submitting trades and rendering structured AI results.
+- Chart UX improvements: moved Trade Review panel below indicators, and added chart-click price picking for Entry/SL/TP fields.
 
 **Acceptance criteria**
-- Admin can submit a current trade (BUY/SELL) with entry + stop (and optional TP) and receive a structured review
-- Each trade review is persisted to the DB and can be retrieved via API
-- All endpoints require session auth; POST endpoints require CSRF token
+- Admin can submit a current trade (BUY/SELL) with entry + stop (and optional TP) and receive a structured review.
+- Each trade review is persisted to the DB and can be retrieved via API.
+- Trade review persistence includes AI output + model metadata + prompt hash (and raw response for troubleshooting).
+- All endpoints require session auth; POST endpoints require CSRF token.
+
+**Follow-ups (optional)**
+- Render trade level overlays on the chart (Entry / SL / TP) and add show/hide/clear controls.
+- Add an admin UI to browse trade review history and optionally archive/soft-delete reviews.
+
+---
+
+## Best-practice suggestions
+- Keep AI outputs on a strict JSON contract per use-case (signals vs trade reviews) and validate server-side.
+- Persist only what you need for audit/debug:
+  - store structured output + model + prompt hash + raw response JSON
+  - avoid storing full prompts by default; if needed, gate behind an admin-only debug flag
+- Treat chart overlays as UI state (show/hide/clear) and keep DB mutations explicit and separate.
+- Prefer archive/soft-delete for admin data lifecycle actions instead of hard delete.
+- Ensure new environments run `php artisan migrate` after pulling changes (especially when new tables are introduced).
+

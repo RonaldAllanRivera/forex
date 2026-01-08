@@ -12,6 +12,7 @@ Scope is intentionally constrained to **higher timeframes (D1/W1/MN1)** to reduc
 - Alpha Vantage candles ingestion (D1/W1/MN1) with retries, backoff, and idempotent imports
 - MySQL persistence with unique constraints to prevent duplicates
 - JSON API for candles, overlays, and signal history
+- DB-backed **Current Trade AI Review** (admin-only) with persisted trade + AI review snapshots
 - Blade UI + TradingView Lightweight Charts (vanilla JS)
 - TailwindCSS via Vite + shared layout (incremental migration away from per-page inline CSS)
 - Optional Volume histogram panel below price (FX volume may be missing; UI uses a simple activity proxy)
@@ -53,6 +54,8 @@ Note: the chart intentionally shows **closed (EOD) candles only** (best for back
 On `/chart`, the **Sync all timeframes** button queues a background sync for **D1/W1/MN1** for the selected symbol. The UI polls status and shows per-timeframe progress.
 
 The chart also includes an **AI Review** button that generates/updates the latest AI signal for the selected symbol + timeframe and renders the result directly in the AI panel (no terminal commands required).
+
+Admin users also get a **Review current trade** panel to submit an already-open trade (entry/SL/TP) and receive a structured AI management review. Inputs are absolute prices; the UI supports chart-click price picking.
 
 Mail testing is available at:
 - Mailpit UI: `http://localhost:8025`
@@ -265,6 +268,9 @@ Alpha Vantage calls are protected by:
 - `GET /api/signals/latest?symbol=EURUSD&timeframe=D1`
 - `POST /api/signals/review` (requires session auth + CSRF)
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `POST /api/trades/review` (requires session auth + CSRF; admin-only)
+- `GET /api/trades` (admin-only)
+- `GET /api/trades/{id}` (admin-only)
 - `GET /api/health`
 
 Responses include a `meta` block with the resolved `symbol` and `timeframe`.

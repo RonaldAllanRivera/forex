@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CandleSyncController;
 use App\Http\Controllers\Api\OverlayController;
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\SymbolController;
+use App\Http\Controllers\Api\TradeController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,12 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/signals/latest', [SignalController::class, 'latest']);
     Route::post('/signals/review', [SignalController::class, 'review']);
     Route::get('/signals', [SignalController::class, 'index']);
+
+    Route::middleware('admin')->group(function () {
+        Route::post('/trades/review', [TradeController::class, 'review']);
+        Route::get('/trades', [TradeController::class, 'index']);
+        Route::get('/trades/{id}', [TradeController::class, 'show']);
+    });
 
     Route::get('/health', function () {
         return response()->json([

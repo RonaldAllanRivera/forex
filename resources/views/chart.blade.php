@@ -137,6 +137,61 @@
         </details>
     </div>
 
+    @if(auth()->user()?->is_admin)
+        <div class="mt-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3" id="tradePanel">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span id="tradeBadge" class="inline-flex items-center rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">Trade</span>
+                    <span id="tradeSummary" class="text-xs text-slate-400">Submit an open trade to get an AI management review.</span>
+                    <span id="tradeSpinner" class="hidden h-3 w-3 animate-spin rounded-full border-2 border-slate-700 border-t-blue-300"></span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div id="tradeMeta" class="text-xs text-slate-400"></div>
+                    <button id="tradeReviewBtn" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/30" type="button">Review current trade</button>
+                </div>
+            </div>
+
+            <div class="mt-2 text-xs text-slate-400">
+                Prices are absolute chart prices (not pips). Tip: click the chart to fill the focused price field.
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3 md:items-end">
+                <div>
+                    <label for="tradeSide" class="block text-xs text-slate-400">Side</label>
+                    <select id="tradeSide" class="mt-2 block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                        <option value="BUY">BUY</option>
+                        <option value="SELL">SELL</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="tradeEntry" class="block text-xs text-slate-400">Entry (price)</label>
+                    <input id="tradeEntry" type="number" step="0.00001" inputmode="decimal" placeholder="e.g. 1.08420" class="mt-2 block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                </div>
+                <div>
+                    <label for="tradeStop" class="block text-xs text-slate-400">Stop loss (price)</label>
+                    <input id="tradeStop" type="number" step="0.00001" inputmode="decimal" placeholder="e.g. 1.08100" class="mt-2 block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                </div>
+
+                <div>
+                    <label for="tradeTp" class="block text-xs text-slate-400">Take profit (price, optional)</label>
+                    <input id="tradeTp" type="number" step="0.00001" inputmode="decimal" placeholder="e.g. 1.09200" class="mt-2 block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                </div>
+                <div class="md:col-span-2">
+                    <label for="tradeOpenedAt" class="block text-xs text-slate-400">Opened at (optional)</label>
+                    <input id="tradeOpenedAt" type="datetime-local" class="mt-2 block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                </div>
+
+                <div class="md:col-span-3">
+                    <label for="tradeNotes" class="block text-xs text-slate-400">Notes (optional)</label>
+                    <textarea id="tradeNotes" rows="2" class="mt-2 block w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"></textarea>
+                </div>
+            </div>
+
+            <div id="tradeReason" class="mt-3 whitespace-pre-wrap text-sm leading-snug text-slate-300"></div>
+            <div id="tradeDetails" class="mt-2 whitespace-pre-wrap text-sm leading-snug text-slate-300"></div>
+        </div>
+    @endif
+
     <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
         <div>Defaults: D1 = last 2 years, W1 = last 5 years, MN1 = last 15 years</div>
         <div>
@@ -173,6 +228,20 @@
     const elAiReason = document.getElementById('aiReason');
     const elAiDetails = document.getElementById('aiDetails');
     const elAiReviewBtn = document.getElementById('aiReviewBtn');
+
+    const elTradeBadge = document.getElementById('tradeBadge');
+    const elTradeSummary = document.getElementById('tradeSummary');
+    const elTradeSpinner = document.getElementById('tradeSpinner');
+    const elTradeMeta = document.getElementById('tradeMeta');
+    const elTradeReviewBtn = document.getElementById('tradeReviewBtn');
+    const elTradeReason = document.getElementById('tradeReason');
+    const elTradeDetails = document.getElementById('tradeDetails');
+    const elTradeSide = document.getElementById('tradeSide');
+    const elTradeEntry = document.getElementById('tradeEntry');
+    const elTradeStop = document.getElementById('tradeStop');
+    const elTradeTp = document.getElementById('tradeTp');
+    const elTradeOpenedAt = document.getElementById('tradeOpenedAt');
+    const elTradeNotes = document.getElementById('tradeNotes');
     const elShowVol = document.getElementById('showVol');
     const elShowSr = document.getElementById('showSr');
     const elShowStoch = document.getElementById('showStoch');
@@ -190,6 +259,9 @@
     let lastSyncKey = '';
 
     let aiReqToken = 0;
+
+    let tradeActivePriceEl = null;
+    let lastPriceDecimals = 5;
 
     function setStatus(kind, text) {
         elStatusBadge.textContent = kind;
@@ -210,6 +282,57 @@
         if (kind === 'ok') {
             elStatusBadge.style.color = '#86efac';
             lastOkStatusText = text;
+        }
+    }
+
+    function guessPriceDecimals(v) {
+        if (v === null || v === undefined) return 5;
+        const s = String(v);
+        if (!s.includes('.')) return 5;
+        const part = s.split('.')[1] || '';
+        const d = part.length;
+        return (d >= 2 && d <= 8) ? d : 5;
+    }
+
+    function fmtPrice(p) {
+        if (!Number.isFinite(p)) return '';
+        return p.toFixed(lastPriceDecimals);
+    }
+
+    function setTradeUi(kind, summary, meta, reason, details, spinning) {
+        if (!elTradeBadge || !elTradeSummary) return;
+
+        elTradeBadge.textContent = kind;
+        elTradeBadge.style.borderColor = '#243043';
+        elTradeBadge.style.color = '#9ca3af';
+
+        elTradeSummary.classList.remove('text-red-300');
+        elTradeSummary.textContent = summary || '';
+
+        if (elTradeMeta) elTradeMeta.textContent = meta || '';
+        if (elTradeReason) elTradeReason.textContent = reason || '';
+        if (elTradeDetails) elTradeDetails.textContent = details || '';
+
+        if (kind === 'HOLD') {
+            elTradeBadge.style.color = '#86efac';
+        }
+        if (kind === 'EXIT') {
+            elTradeBadge.style.color = '#fca5a5';
+        }
+        if (kind === 'ADJUST_STOP') {
+            elTradeBadge.style.color = '#93c5fd';
+        }
+        if (kind === 'WAIT') {
+            elTradeBadge.style.color = '#fbbf24';
+        }
+        if (kind === 'error') {
+            elTradeBadge.style.color = '#fca5a5';
+            elTradeSummary.classList.add('text-red-300');
+        }
+
+        if (elTradeSpinner) {
+            if (spinning) elTradeSpinner.classList.remove('hidden');
+            else elTradeSpinner.classList.add('hidden');
         }
     }
 
@@ -342,6 +465,105 @@
             setAiUi('error', e?.message ? String(e.message) : 'AI Review failed', '', '', '', false);
         } finally {
             elAiReviewBtn.disabled = false;
+        }
+    }
+
+    async function runTradeReview() {
+        if (!elTradeReviewBtn || !elTradeSide || !elTradeEntry || !elTradeStop) return;
+
+        const symbol = elSymbol.value;
+        const timeframe = elTimeframe.value;
+        if (!symbol || !timeframe) return;
+
+        const side = String(elTradeSide.value || 'BUY');
+        const entry = Number(elTradeEntry.value);
+        const stop = Number(elTradeStop.value);
+        const tpRaw = elTradeTp ? String(elTradeTp.value || '') : '';
+        const tp = tpRaw ? Number(tpRaw) : null;
+        const openedAtRaw = elTradeOpenedAt ? String(elTradeOpenedAt.value || '') : '';
+        const openedAt = openedAtRaw ? new Date(openedAtRaw).toISOString() : null;
+        const notes = elTradeNotes ? String(elTradeNotes.value || '') : '';
+
+        if (!Number.isFinite(entry) || !Number.isFinite(stop)) {
+            setTradeUi('error', 'Entry price and stop loss are required.', '', '', '', false);
+            return;
+        }
+
+        elTradeReviewBtn.disabled = true;
+        setTradeUi('loading', `Reviewing trade (${symbol} ${timeframe})…`, '', '', '', true);
+
+        try {
+            const res = await fetch('/api/trades/review', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    symbol,
+                    timeframe,
+                    side,
+                    entry_price: entry,
+                    stop_loss: stop,
+                    take_profit: tp,
+                    opened_at: openedAt,
+                    notes: notes || null,
+                }),
+            });
+
+            const payload = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                const msg = payload?.message || `Trade review failed (${res.status})`;
+                setTradeUi('error', msg, '', '', '', false);
+                return;
+            }
+
+            const data = payload?.data || {};
+            const review = data?.review_json || {};
+
+            const decision = String(review?.decision || 'WAIT');
+            const conf = (review?.confidence === null || review?.confidence === undefined) ? null : Number(review?.confidence);
+            const candleAsOf = String(data?.candle_as_of_date || '');
+            const generatedAt = String(data?.generated_at || '');
+            const model = data?.model ? String(data.model) : '—';
+
+            const summaryParts = [decision];
+            if (Number.isFinite(conf)) summaryParts.push(`(${Math.round(conf)}%)`);
+            if (candleAsOf) summaryParts.push(`as of ${candleAsOf}`);
+
+            const summary = String(review?.summary || '');
+            const plan = String(review?.management_plan || '');
+            const invalidation = String(review?.invalidation || '');
+
+            const levels = Array.isArray(review?.key_levels) ? review.key_levels : [];
+            const lvlText = levels
+                .map(l => {
+                    const type = l?.type ? String(l.type) : '';
+                    const price = Number(l?.price);
+                    if (!Number.isFinite(price)) return null;
+                    return `${type}:${price}`;
+                })
+                .filter(Boolean);
+
+            const details = [
+                lvlText.length ? `Key levels: ${lvlText.join(', ')}` : '',
+                invalidation ? `Invalidation: ${invalidation}` : '',
+                plan ? `Plan: ${plan}` : '',
+            ].filter(Boolean).join('\n');
+
+            const meta = [
+                model ? `Model: ${model}` : '',
+                generatedAt ? `Generated: ${humanizeIso(generatedAt)}` : '',
+            ].filter(Boolean).join(' · ');
+
+            setTradeUi(decision, summaryParts.join(' · '), meta, summary, details, false);
+        } catch (e) {
+            setTradeUi('error', e?.message ? String(e.message) : 'Trade review failed', '', '', '', false);
+        } finally {
+            elTradeReviewBtn.disabled = false;
         }
     }
 
@@ -659,6 +881,15 @@
         wickDownColor: '#ef4444',
     });
 
+    chart.subscribeClick((param) => {
+        if (!tradeActivePriceEl) return;
+        if (!param || !param.point) return;
+        const price = series.coordinateToPrice(param.point.y);
+        if (!Number.isFinite(price)) return;
+        tradeActivePriceEl.value = fmtPrice(price);
+        tradeActivePriceEl.dispatchEvent(new Event('change'));
+    });
+
     const volChart = LightweightCharts.createChart(document.getElementById('volChart'), {
         layout: { background: { color: '#0b1222' }, textColor: '#e5e7eb' },
         grid: { vertLines: { color: '#111827' }, horzLines: { color: '#111827' } },
@@ -966,6 +1197,10 @@
 
             const candles = Array.isArray(payload.data) ? payload.data : [];
             lastLoadedCandles = candles;
+
+            if (candles.length > 0) {
+                lastPriceDecimals = guessPriceDecimals(candles[candles.length - 1]?.c);
+            }
             const sorted = [...candles].sort((a, b) => Number(a.t) - Number(b.t));
             const seenT = new Set();
             let skipped = 0;
@@ -1006,6 +1241,13 @@
             if (candles.length > 0) {
                 const lastT = candles[candles.length - 1].t;
                 elLastClosed.textContent = `Last closed: ${fmtDate(new Date(Number(lastT) * 1000))}`;
+
+                if (elTradeEntry && String(elTradeEntry.value || '') === '') {
+                    const lastClose = Number(candles[candles.length - 1].c);
+                    if (Number.isFinite(lastClose)) {
+                        elTradeEntry.value = fmtPrice(lastClose);
+                    }
+                }
             } else {
                 elLastClosed.textContent = 'Last closed: —';
             }
@@ -1083,6 +1325,15 @@
 
             if (elAiReviewBtn) {
                 elAiReviewBtn.addEventListener('click', () => runAiReview());
+            }
+
+            if (elTradeReviewBtn) {
+                elTradeReviewBtn.addEventListener('click', () => runTradeReview());
+            }
+
+            const tradePriceEls = [elTradeEntry, elTradeStop, elTradeTp].filter(Boolean);
+            for (const el of tradePriceEls) {
+                el.addEventListener('focus', () => { tradeActivePriceEl = el; });
             }
         } catch (e) {
             setStatus('error', e?.message ? String(e.message) : 'Init failed');

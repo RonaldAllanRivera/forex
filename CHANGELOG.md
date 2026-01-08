@@ -8,8 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- DB-backed Current Trade AI Review feature (trades + trade_reviews) with persisted AI review snapshots.
+- Trade review JSON API endpoints (`POST /api/trades/review`, `GET /api/trades`, `GET /api/trades/{id}`) (session auth + CSRF; admin-only).
+- `/chart` UI panel to submit current trades and display structured AI management guidance.
 
 ### Changed
+- `/chart` Trade Review UI moved below indicators, and supports chart-click price picking for Entry/SL/TP inputs.
 
 ### Fixed
 
