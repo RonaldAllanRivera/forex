@@ -363,6 +363,132 @@
         }
     }
 
+    function toDatetimeLocalValue(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '';
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+    }
+
+    function renderPersistedTrade(trade, latestReview) {
+        if (!trade) {
+            setTradeUi('Trade', 'Submit an open trade to get an AI management review.', '', '', '', false);
+            return;
+        }
+
+        if (elTradeSide && trade.side) elTradeSide.value = String(trade.side);
+        if (elTradeEntry && trade.entry_price !== null && trade.entry_price !== undefined) elTradeEntry.value = fmtPrice(Number(trade.entry_price));
+        if (elTradeStop && trade.stop_loss !== null && trade.stop_loss !== undefined) elTradeStop.value = fmtPrice(Number(trade.stop_loss));
+        if (elTradeTp) {
+            const tp = (trade.take_profit === null || trade.take_profit === undefined || trade.take_profit === '') ? '' : fmtPrice(Number(trade.take_profit));
+            elTradeTp.value = tp;
+        }
+        if (elTradeOpenedAt) elTradeOpenedAt.value = toDatetimeLocalValue(trade.opened_at);
+        if (elTradeNotes) elTradeNotes.value = trade.notes ? String(trade.notes) : '';
+
+        if (!latestReview) {
+            setTradeUi('Trade', 'Open trade loaded. No AI review snapshot yet — click Review current trade.', '', '', '', false);
+            return;
+        }
+
+        const review = latestReview?.review_json || {};
+        const decision = String(review?.decision || 'WAIT');
+        const conf = (review?.confidence === null || review?.confidence === undefined) ? null : Number(review?.confidence);
+        const candleAsOf = String(latestReview?.candle_as_of_date || '');
+        const generatedAt = String(latestReview?.generated_at || '');
+        const model = latestReview?.model ? String(latestReview.model) : '—';
+
+        const summaryParts = [decision];
+        if (Number.isFinite(conf)) summaryParts.push(`(${Math.round(conf)}%)`);
+        if (candleAsOf) summaryParts.push(`as of ${candleAsOf}`);
+
+        const summary = String(review?.summary || '');
+        const plan = String(review?.management_plan || '');
+        const invalidation = String(review?.invalidation || '');
+
+        const keyLevels = Array.isArray(review?.key_levels) ? review.key_levels : [];
+        const lvlText = keyLevels
+            .map(l => {
+                const type = l?.type ? String(l.type) : '';
+                const price = Number(l?.price);
+                if (!Number.isFinite(price)) return null;
+                return `${type}:${price}`;
+            })
+            .filter(Boolean);
+
+        const details = [
+            lvlText.length ? `Key levels: ${lvlText.join(', ')}` : '',
+            invalidation ? `Invalidation: ${invalidation}` : '',
+            plan ? `Plan: ${plan}` : '',
+        ].filter(Boolean).join('\n');
+
+        const meta = [
+            model ? `Model: ${model}` : '',
+            generatedAt ? `Generated: ${humanizeIso(generatedAt)}` : '',
+        ].filter(Boolean).join(' · ');
+
+        setTradeUi(decision, summaryParts.join(' · '), meta, summary, details, false);
+    }
+
+    async function loadCurrentTrade() {
+        if (!elTradeReviewBtn) return;
+        const symbol = elSymbol?.value;
+        const timeframe = elTimeframe?.value;
+        if (!symbol || !timeframe) return;
+
+        setTradeUi('loading', `Loading current trade (${symbol} ${timeframe})…`, '', '', '', true);
+
+        try {
+            const params = new URLSearchParams();
+            params.set('symbol', symbol);
+            params.set('timeframe', timeframe);
+            const res = await fetch(`/api/trades/current?${params.toString()}`, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+            });
+            const payload = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                if (res.status === 404) {
+                    hideTradeLines();
+                    tradeLevels = null;
+                    updateTradeLineButtons();
+                    setTradeUi('Trade', 'No open trade for this symbol/timeframe. Submit one to get an AI review.', '', '', '', false);
+                    return;
+                }
+                const msg = payload?.message || `Current trade load failed (${res.status})`;
+                setTradeUi('error', msg, '', '', '', false);
+                return;
+            }
+
+            const data = payload?.data || {};
+            const trade = data?.trade || null;
+            const latestReview = data?.latest_review || null;
+
+            const entry = Number(trade?.entry_price);
+            const stop = Number(trade?.stop_loss);
+            const tp = (trade?.take_profit === null || trade?.take_profit === undefined || trade?.take_profit === '') ? null : Number(trade.take_profit);
+            if (Number.isFinite(entry) && Number.isFinite(stop)) {
+                const tradePriceLevels = { entry, stop, tp: Number.isFinite(tp) ? tp : null };
+                tradeLevels = tradePriceLevels;
+                tradeLevelsByKey.set(currentTradeLevelsKey(), tradePriceLevels);
+                renderTradeLines(tradePriceLevels);
+            } else {
+                tradeLevels = null;
+                updateTradeLineButtons();
+            }
+
+            renderPersistedTrade(trade, latestReview);
+        } catch (e) {
+            setTradeUi('error', e?.message ? String(e.message) : 'Current trade load failed', '', '', '', false);
+        }
+    }
+
     function setSyncUi(kind, text, spinning) {
         if (!elSyncText || !elSyncBadge || !elSyncSpinner) return;
         elSyncBadge.textContent = kind;
@@ -519,7 +645,7 @@
         elTradeReviewBtn.disabled = true;
         setTradeUi('loading', `Reviewing trade (${symbol} ${timeframe})…`, '', '', '', true);
 
-        try {
+        async function submit(replace) {
             const res = await fetch('/api/trades/review', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -537,6 +663,7 @@
                     take_profit: tp,
                     opened_at: openedAt,
                     notes: notes || null,
+                    replace: !!replace,
                 }),
             });
 
@@ -545,8 +672,15 @@
             if (!res.ok) {
                 const msg = payload?.message || `Trade review failed (${res.status})`;
                 setTradeUi('error', msg, '', '', '', false);
-                return;
+                return null;
             }
+
+            return payload;
+        }
+
+        try {
+            const payload = await submit(false);
+            if (!payload) return;
 
             const data = payload?.data || {};
             const review = data?.review_json || {};
@@ -930,6 +1064,7 @@
         hideTradeLines();
         tradeLevels = tradeLevelsByKey.get(currentTradeLevelsKey()) || null;
         updateTradeLineButtons();
+        loadCurrentTrade();
     }
 
     function renderTradeLines(levels) {

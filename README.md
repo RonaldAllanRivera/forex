@@ -102,6 +102,20 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 docker compose exec -T laravel.test php artisan test
 ```
 
+Note: the test suite defaults to an in-memory SQLite database via `phpunit.xml` for speed and isolation. Best practice is to run tests inside the Docker container (command above), where the PHP SQLite extension is available.
+
+If you prefer (or need) to run tests on your host machine using MySQL (for example, when your host PHP lacks SQLite), you can override the test DB env vars. Docker Compose creates a `testing` database automatically:
+
+```bash
+DB_CONNECTION=mysql \
+DB_HOST=127.0.0.1 \
+DB_PORT=3306 \
+DB_DATABASE=testing \
+DB_USERNAME=laravel \
+DB_PASSWORD=\
+php artisan test
+```
+
 ### Queue worker
 This project uses `QUEUE_CONNECTION=database` by default.
 
@@ -272,6 +286,8 @@ Alpha Vantage calls are protected by:
 - `POST /api/signals/review` (requires session auth + CSRF)
 - `GET /api/signals?symbol=EURUSD&timeframe=D1&from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `POST /api/trades/review` (requires session auth + CSRF; admin-only)
+- `GET /api/trades/current` (admin-only)
+- `POST /api/trades/{id}/close` (admin-only)
 - `GET /api/trades` (admin-only)
 - `GET /api/trades/{id}` (admin-only)
 - `GET /api/health`

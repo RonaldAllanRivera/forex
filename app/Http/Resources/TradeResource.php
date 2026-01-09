@@ -18,6 +18,7 @@ class TradeResource extends JsonResource
             'stop_loss' => $this->stop_loss,
             'take_profit' => $this->take_profit,
             'opened_at' => $this->opened_at?->toISOString(),
+            'closed_at' => $this->closed_at?->toISOString(),
             'notes' => $this->notes,
             'created_at' => $this->created_at?->toISOString(),
         ];

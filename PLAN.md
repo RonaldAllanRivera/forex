@@ -558,6 +558,8 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
   - output: AI guidance to continue vs close/exit, stop placement quality, key levels, invalidation, and a simple management plan
 - API:
   - `POST /api/trades/review` (creates a saved Trade + AI review snapshot)
+  - `GET /api/trades/current` (fetch the current open trade for symbol/timeframe + its latest review)
+  - `POST /api/trades/{id}/close` (close an open trade)
   - `GET /api/trades` (list recent trade reviews)
   - `GET /api/trades/{id}` (view one review)
 - Security/ops:
@@ -580,6 +582,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 **Acceptance criteria**
 - Admin can submit a current trade (BUY/SELL) with entry + stop (and optional TP) and receive a structured review.
 - Each trade review is persisted to the DB and can be retrieved via API.
+- The current open trade (and its latest AI review) persists across page loads and can be reloaded without re-running OpenAI.
 - Trade review persistence includes AI output + model metadata + prompt hash (and raw response for troubleshooting).
 - All endpoints require session auth; POST endpoints require CSRF token.
 

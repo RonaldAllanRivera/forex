@@ -18,6 +18,7 @@ class Trade extends Model
         'stop_loss',
         'take_profit',
         'opened_at',
+        'closed_at',
         'notes',
     ];
 
@@ -29,6 +30,7 @@ class Trade extends Model
             'stop_loss' => 'decimal:6',
             'take_profit' => 'decimal:6',
             'opened_at' => 'datetime',
+            'closed_at' => 'datetime',
         ];
     }
 

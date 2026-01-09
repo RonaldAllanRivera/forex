@@ -21,6 +21,8 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::middleware('admin')->group(function () {
         Route::post('/trades/review', [TradeController::class, 'review']);
+        Route::get('/trades/current', [TradeController::class, 'current']);
+        Route::post('/trades/{id}/close', [TradeController::class, 'close']);
         Route::get('/trades', [TradeController::class, 'index']);
         Route::get('/trades/{id}', [TradeController::class, 'show']);
     });

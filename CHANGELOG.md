@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - DB-backed Current Trade AI Review feature (trades + trade_reviews) with persisted AI review snapshots.
 - Trade review JSON API endpoints (`POST /api/trades/review`, `GET /api/trades`, `GET /api/trades/{id}`) (session auth + CSRF; admin-only).
+- Current open trade lifecycle endpoints (`GET /api/trades/current`, `POST /api/trades/{id}/close`) to persist and reload the latest trade/review without re-running OpenAI.
 - `/chart` UI panel to submit current trades and display structured AI management guidance.
 
 ### Changed

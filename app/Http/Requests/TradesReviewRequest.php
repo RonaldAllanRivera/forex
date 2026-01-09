@@ -31,6 +31,7 @@ class TradesReviewRequest extends FormRequest
             'take_profit' => ['nullable', 'numeric'],
             'opened_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
+            'replace' => ['nullable', 'boolean'],
         ];
     }
 
