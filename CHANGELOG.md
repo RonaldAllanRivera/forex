@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `/chart` Trade Review UI moved below indicators, and supports chart-click price picking for Entry/SL/TP inputs.
+- Local development docs now recommend configuring non-privileged per-project ports (via `.env`) to avoid Docker port conflicts.
+- Trade level overlays on `/chart` now use a show/hide toggle only (no clear button).
 
 ### Fixed
 

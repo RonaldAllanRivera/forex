@@ -147,6 +147,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <div id="tradeMeta" class="text-xs text-slate-400"></div>
+                    <button id="tradeLinesToggleBtn" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/30 disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled>Show lines</button>
                     <button id="tradeReviewBtn" class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500/30" type="button">Review current trade</button>
                 </div>
             </div>
@@ -233,6 +234,7 @@
     const elTradeSummary = document.getElementById('tradeSummary');
     const elTradeSpinner = document.getElementById('tradeSpinner');
     const elTradeMeta = document.getElementById('tradeMeta');
+    const elTradeLinesToggleBtn = document.getElementById('tradeLinesToggleBtn');
     const elTradeReviewBtn = document.getElementById('tradeReviewBtn');
     const elTradeReason = document.getElementById('tradeReason');
     const elTradeDetails = document.getElementById('tradeDetails');
@@ -262,6 +264,11 @@
 
     let tradeActivePriceEl = null;
     let lastPriceDecimals = 5;
+
+    let tradeLines = { entry: null, stop: null, tp: null };
+    let tradeLevels = null;
+    let tradeLevelsByKey = new Map();
+    let tradeLinesVisible = false;
 
     function setStatus(kind, text) {
         elStatusBadge.textContent = kind;
@@ -297,6 +304,26 @@
     function fmtPrice(p) {
         if (!Number.isFinite(p)) return '';
         return p.toFixed(lastPriceDecimals);
+    }
+
+    function currentTradeLevelsKey() {
+        const sym = elSymbol?.value ? String(elSymbol.value) : '';
+        const tf = elTimeframe?.value ? String(elTimeframe.value) : '';
+        return `${sym}|${tf}`;
+    }
+
+    function updateTradeLineButtons() {
+        if (!elTradeLinesToggleBtn) return;
+
+        const hasLevels = !!tradeLevels;
+        elTradeLinesToggleBtn.disabled = !hasLevels;
+
+        if (!hasLevels) {
+            elTradeLinesToggleBtn.textContent = 'Show lines';
+            return;
+        }
+
+        elTradeLinesToggleBtn.textContent = tradeLinesVisible ? 'Hide lines' : 'Show lines';
     }
 
     function setTradeUi(kind, summary, meta, reason, details, spinning) {
@@ -538,8 +565,8 @@
             const plan = String(review?.management_plan || '');
             const invalidation = String(review?.invalidation || '');
 
-            const levels = Array.isArray(review?.key_levels) ? review.key_levels : [];
-            const lvlText = levels
+            const keyLevels = Array.isArray(review?.key_levels) ? review.key_levels : [];
+            const lvlText = keyLevels
                 .map(l => {
                     const type = l?.type ? String(l.type) : '';
                     const price = Number(l?.price);
@@ -560,6 +587,15 @@
             ].filter(Boolean).join(' · ');
 
             setTradeUi(decision, summaryParts.join(' · '), meta, summary, details, false);
+
+            const tradePriceLevels = {
+                entry,
+                stop,
+                tp,
+            };
+            tradeLevels = tradePriceLevels;
+            tradeLevelsByKey.set(currentTradeLevelsKey(), tradePriceLevels);
+            renderTradeLines(tradePriceLevels);
         } catch (e) {
             setTradeUi('error', e?.message ? String(e.message) : 'Trade review failed', '', '', '', false);
         } finally {
@@ -880,6 +916,62 @@
         wickUpColor: '#22c55e',
         wickDownColor: '#ef4444',
     });
+
+    function hideTradeLines() {
+        try { if (tradeLines.entry) series.removePriceLine(tradeLines.entry); } catch (_) {}
+        try { if (tradeLines.stop) series.removePriceLine(tradeLines.stop); } catch (_) {}
+        try { if (tradeLines.tp) series.removePriceLine(tradeLines.tp); } catch (_) {}
+        tradeLines = { entry: null, stop: null, tp: null };
+        tradeLinesVisible = false;
+        updateTradeLineButtons();
+    }
+
+    function restoreTradeLevelsForSelection() {
+        hideTradeLines();
+        tradeLevels = tradeLevelsByKey.get(currentTradeLevelsKey()) || null;
+        updateTradeLineButtons();
+    }
+
+    function renderTradeLines(levels) {
+        if (!levels) return;
+
+        try { if (tradeLines.entry) series.removePriceLine(tradeLines.entry); } catch (_) {}
+        try { if (tradeLines.stop) series.removePriceLine(tradeLines.stop); } catch (_) {}
+        try { if (tradeLines.tp) series.removePriceLine(tradeLines.tp); } catch (_) {}
+
+        tradeLines.entry = series.createPriceLine({
+            price: levels.entry,
+            color: '#93c5fd',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid,
+            axisLabelVisible: true,
+            title: `Entry ${fmtPrice(levels.entry)}`,
+        });
+
+        tradeLines.stop = series.createPriceLine({
+            price: levels.stop,
+            color: '#fca5a5',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid,
+            axisLabelVisible: true,
+            title: `SL ${fmtPrice(levels.stop)}`,
+        });
+
+        tradeLines.tp = null;
+        if (levels.tp !== null && levels.tp !== undefined) {
+            tradeLines.tp = series.createPriceLine({
+                price: levels.tp,
+                color: '#86efac',
+                lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Solid,
+                axisLabelVisible: true,
+                title: `TP ${fmtPrice(levels.tp)}`,
+            });
+        }
+
+        tradeLinesVisible = true;
+        updateTradeLineButtons();
+    }
 
     chart.subscribeClick((param) => {
         if (!tradeActivePriceEl) return;
@@ -1284,11 +1376,13 @@
         applyIndicatorDefaults();
         loadCandles();
         refreshSyncStatus();
+        restoreTradeLevelsForSelection();
     });
 
     elSymbol.addEventListener('change', () => {
         loadCandles();
         refreshSyncStatus();
+        restoreTradeLevelsForSelection();
     });
 
     elShowVol.addEventListener('change', () => renderVolFromLastCandles());
@@ -1331,10 +1425,23 @@
                 elTradeReviewBtn.addEventListener('click', () => runTradeReview());
             }
 
+            if (elTradeLinesToggleBtn) {
+                elTradeLinesToggleBtn.addEventListener('click', () => {
+                    if (!tradeLevels) return;
+                    if (tradeLinesVisible) {
+                        hideTradeLines();
+                        return;
+                    }
+                    renderTradeLines(tradeLevels);
+                });
+            }
+
             const tradePriceEls = [elTradeEntry, elTradeStop, elTradeTp].filter(Boolean);
             for (const el of tradePriceEls) {
                 el.addEventListener('focus', () => { tradeActivePriceEl = el; });
             }
+
+            restoreTradeLevelsForSelection();
         } catch (e) {
             setStatus('error', e?.message ? String(e.message) : 'Init failed');
         }

@@ -584,7 +584,7 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - All endpoints require session auth; POST endpoints require CSRF token.
 
 **Follow-ups (optional)**
-- Render trade level overlays on the chart (Entry / SL / TP) and add show/hide/clear controls.
+- Render trade level overlays on the chart (Entry / SL / TP) and add show/hide controls.
 - Add an admin UI to browse trade review history and optionally archive/soft-delete reviews.
 
 ---
@@ -594,7 +594,8 @@ The sync command reports `inserted`, `updated`, `unchanged`, and `upserted` to m
 - Persist only what you need for audit/debug:
   - store structured output + model + prompt hash + raw response JSON
   - avoid storing full prompts by default; if needed, gate behind an admin-only debug flag
-- Treat chart overlays as UI state (show/hide/clear) and keep DB mutations explicit and separate.
+- Treat chart overlays as UI state (show/hide) and keep DB mutations explicit and separate.
+- For local development, prefer non-privileged per-project ports (via `.env` / Docker Compose) to avoid conflicts across multiple Laravel/Sail stacks.
 - Prefer archive/soft-delete for admin data lifecycle actions instead of hard delete.
 - Ensure new environments run `php artisan migrate` after pulling changes (especially when new tables are introduced).
 

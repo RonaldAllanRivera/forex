@@ -39,11 +39,14 @@ Scope is intentionally constrained to **higher timeframes (D1/W1/MN1)** to reduc
 docker compose up -d --build
 ```
 
-The app is exposed on:
-- `http://localhost` (port `80` by default)
+The app is exposed on the host port defined by `APP_PORT` (recommended: use a non-privileged port to avoid conflicts between Docker projects).
+
+Example (if `APP_PORT=8088`):
+- `http://localhost:8088`
+- `http://forex.test:8088` (requires a hosts entry: `127.0.0.1 forex.test`)
 
 Chart UI:
-- `http://localhost/chart` (guests are redirected to `/login`)
+- `http://localhost:8088/chart` (guests are redirected to `/login`)
 
 Authentication:
 - All web routes and `/api/*` routes require a logged-in user (Laravel session auth).
@@ -58,7 +61,7 @@ The chart also includes an **AI Review** button that generates/updates the lates
 Admin users also get a **Review current trade** panel to submit an already-open trade (entry/SL/TP) and receive a structured AI management review. Inputs are absolute prices; the UI supports chart-click price picking.
 
 Mail testing is available at:
-- Mailpit UI: `http://localhost:8025`
+- Mailpit UI: `http://localhost:8025` (or your configured `FORWARD_MAILPIT_PORT`)
 
 ### Install dependencies / generate key (first run)
 If you created the project with Composer, you already have an app key. Otherwise:
